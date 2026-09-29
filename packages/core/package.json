@@ -1,0 +1,37 @@
+{
+  "name": "@makleri/core",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "type": "module",
+  "files": ["dist"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./config": { "types": "./dist/config.d.ts", "import": "./dist/config.js" },
+    "./content": { "types": "./dist/content/index.d.ts", "import": "./dist/content/index.js" },
+    "./seo": { "types": "./dist/seo/index.d.ts", "import": "./dist/seo/index.js" },
+    "./overrides": { "types": "./dist/overrides.d.ts", "import": "./dist/overrides.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0 || ^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@makleri/config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" }
+}

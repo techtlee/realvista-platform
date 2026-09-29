@@ -1,0 +1,28 @@
+{
+  "name": "@makleri/config",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "private": false,
+  "type": "module",
+  "files": ["dist", "tsconfig.base.json", "oxlintrc.json"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./oxlintrc.json": "./oxlintrc.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0 || ^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "next": "^16.0.0",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "extends": "@makleri/config/tsconfig.base.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts"]
+}

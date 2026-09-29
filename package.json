@@ -1,0 +1,24 @@
+{
+  "name": "@makleri/platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' build",
+    "dev:gallery": "pnpm --filter @makleri/gallery dev",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint .",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "oxlint": "^1.0.0",
+    "typescript": "^5.7.0"
+  }
+}
