@@ -1,0 +1,127 @@
+@import 'tailwindcss';
+
+/*
+ * REALVISTA — one build, four colour variants.
+ *
+ * `@theme inline` is load-bearing, not stylistic. It makes `.bg-brand-600`
+ * compile to `background-color: var(--rv-brand-600)` — a runtime lookup
+ * resolved per element — so redefining the token under `[data-variant]`
+ * actually reaches the utility. Without `inline`, Tailwind bakes the value in
+ * at build time and every variant renders identically.
+ *
+ * The consuming app must also declare:
+ *   @source "../node_modules/@makleri/theme-realvista/dist";
+ * Tailwind v4 skips node_modules when detecting classes, so without it every
+ * class here is purged and the site renders unstyled. That is the single most
+ * likely first-day failure on a new client site.
+ */
+
+@theme inline {
+  --color-brand-50: var(--rv-brand-50);
+  --color-brand-100: var(--rv-brand-100);
+  --color-brand-200: var(--rv-brand-200);
+  --color-brand-500: var(--rv-brand-500);
+  --color-brand-600: var(--rv-brand-600);
+  --color-brand-700: var(--rv-brand-700);
+  --color-brand-900: var(--rv-brand-900);
+
+  --color-surface: var(--rv-surface);
+  --color-surface-alt: var(--rv-surface-alt);
+  --color-ink: var(--rv-ink);
+  --color-ink-muted: var(--rv-ink-muted);
+  --color-line: var(--rv-line);
+  --color-on-brand: var(--rv-on-brand);
+
+  --radius-card: var(--rv-radius-card);
+  --font-display: var(--rv-font-display);
+  --font-sans: var(--rv-font-sans);
+}
+
+/* ── indigo (default) ──────────────────────────────────────────────────── */
+:root,
+[data-variant='indigo'] {
+  --rv-brand-50: oklch(0.972 0.018 275);
+  --rv-brand-100: oklch(0.936 0.038 275);
+  --rv-brand-200: oklch(0.876 0.072 275);
+  --rv-brand-500: oklch(0.583 0.201 275);
+  --rv-brand-600: oklch(0.511 0.213 275);
+  --rv-brand-700: oklch(0.438 0.192 275);
+  --rv-brand-900: oklch(0.291 0.11 275);
+
+  --rv-surface: oklch(1 0 0);
+  --rv-surface-alt: oklch(0.974 0.005 275);
+  --rv-ink: oklch(0.221 0.021 275);
+  --rv-ink-muted: oklch(0.523 0.019 275);
+  --rv-line: oklch(0.906 0.008 275);
+  --rv-on-brand: oklch(1 0 0);
+
+  --rv-radius-card: 0.75rem;
+  --rv-font-display: var(--font-display-loaded, ui-serif), Georgia, serif;
+  --rv-font-sans: var(--font-sans-loaded, ui-sans-serif), system-ui, sans-serif;
+}
+
+/* ── sand ──────────────────────────────────────────────────────────────── */
+[data-variant='sand'] {
+  --rv-brand-50: oklch(0.971 0.013 68);
+  --rv-brand-100: oklch(0.934 0.028 68);
+  --rv-brand-200: oklch(0.872 0.052 68);
+  --rv-brand-500: oklch(0.621 0.089 68);
+  --rv-brand-600: oklch(0.545 0.092 62);
+  --rv-brand-700: oklch(0.463 0.081 58);
+  --rv-brand-900: oklch(0.297 0.048 54);
+
+  --rv-surface: oklch(1 0 0);
+  --rv-surface-alt: oklch(0.972 0.009 74);
+  --rv-ink: oklch(0.236 0.019 62);
+  --rv-ink-muted: oklch(0.529 0.021 66);
+  --rv-line: oklch(0.905 0.012 70);
+  --rv-on-brand: oklch(1 0 0);
+
+  --rv-radius-card: 0.5rem;
+}
+
+/* ── crimson ───────────────────────────────────────────────────────────── */
+[data-variant='crimson'] {
+  --rv-brand-50: oklch(0.971 0.015 20);
+  --rv-brand-100: oklch(0.936 0.034 20);
+  --rv-brand-200: oklch(0.879 0.068 22);
+  --rv-brand-500: oklch(0.594 0.216 27);
+  --rv-brand-600: oklch(0.526 0.211 27);
+  --rv-brand-700: oklch(0.451 0.183 27);
+  --rv-brand-900: oklch(0.301 0.113 26);
+
+  --rv-surface: oklch(1 0 0);
+  --rv-surface-alt: oklch(0.974 0.006 25);
+  --rv-ink: oklch(0.219 0.018 25);
+  --rv-ink-muted: oklch(0.521 0.019 25);
+  --rv-line: oklch(0.906 0.009 25);
+  --rv-on-brand: oklch(1 0 0);
+
+  --rv-radius-card: 0.375rem;
+}
+
+/* ── mono ──────────────────────────────────────────────────────────────── */
+[data-variant='mono'] {
+  --rv-brand-50: oklch(0.97 0 0);
+  --rv-brand-100: oklch(0.93 0 0);
+  --rv-brand-200: oklch(0.87 0 0);
+  --rv-brand-500: oklch(0.35 0 0);
+  --rv-brand-600: oklch(0.26 0 0);
+  --rv-brand-700: oklch(0.2 0 0);
+  --rv-brand-900: oklch(0.13 0 0);
+
+  --rv-surface: oklch(1 0 0);
+  --rv-surface-alt: oklch(0.968 0 0);
+  --rv-ink: oklch(0.16 0 0);
+  --rv-ink-muted: oklch(0.5 0 0);
+  --rv-line: oklch(0.9 0 0);
+  --rv-on-brand: oklch(1 0 0);
+
+  --rv-radius-card: 0rem;
+}
+
+body {
+  background-color: var(--rv-surface);
+  color: var(--rv-ink);
+  font-family: var(--rv-font-sans);
+}

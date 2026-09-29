@@ -4,9 +4,17 @@
   "license": "UNLICENSED",
   "private": false,
   "type": "module",
-  "files": ["dist", "tsconfig.base.json", "oxlintrc.json"],
+  "files": [
+    "dist",
+    "tsconfig.base.json",
+    "oxlintrc.json"
+  ],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./oxlintrc.json": "./oxlintrc.json"
   },

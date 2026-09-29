@@ -1,0 +1,6 @@
+@import '@makleri/theme-realvista/styles/theme.css';
+
+/* Tailwind v4 does not scan node_modules when detecting classes. Without these
+ * every class the theme uses is purged and the site renders unstyled. */
+@source "../node_modules/@makleri/theme-realvista/dist";
+@source "../../../packages/theme-realvista/src";
