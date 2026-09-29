@@ -4,7 +4,7 @@ import { defineSiteConfig } from '../src/config'
 
 const minimal = {
   siteId: 'novak-reality',
-  theme: { name: 'realvista', variant: 'sand' as const },
+  theme: { name: 'realvista', variant: 'clay' as const },
   domain: 'novakreality.cz',
   cms: { url: 'https://cms.makleri.cz', tenantId: 7 },
 }

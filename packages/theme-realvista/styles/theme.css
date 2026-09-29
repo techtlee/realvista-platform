@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * REALVISTA — tokens taken from the Figma export.
+ * REALVISTA — tokens taken verbatim from the Figma CSS exports.
  *
  * `@theme inline` is load-bearing, not stylistic. It makes `.bg-brand` compile
  * to `background-color: var(--rv-brand)` — a runtime lookup resolved per
@@ -13,15 +13,22 @@
  *   @source "../node_modules/@makleri/theme-realvista/dist";
  * Tailwind v4 skips node_modules when detecting classes, so without it every
  * class here is purged and the site renders unstyled.
+ *
+ * NOTE ON THE HERO. The variants are not simple hue swaps. Indigo puts dark
+ * type on a pale wash over the photo; crimson and clay put white type on a
+ * saturated gradient or a dark scrim. That is why `--rv-hero-ink` exists as its
+ * own token rather than inheriting `--rv-brand` — getting it wrong produces
+ * indigo-on-indigo text that technically renders and cannot be read.
  */
 
 @theme inline {
   --color-brand: var(--rv-brand);
-  --color-brand-soft: var(--rv-brand-soft);
   --color-page: var(--rv-page);
   --color-accent: var(--rv-accent);
   --color-muted: var(--rv-muted);
   --color-card: var(--rv-card);
+  --color-hero-ink: var(--rv-hero-ink);
+  --color-footer-ink: var(--rv-footer-ink);
 
   --radius-btn: var(--rv-radius-btn);
   --radius-pill: 30px;
@@ -30,20 +37,21 @@
   --font-sans: var(--rv-font-sans);
 }
 
-/* ── indigo — the values in the Figma ──────────────────────────────────── */
+/* ── indigo ────────────────────────────────────────────────────── exact ── */
 :root,
 [data-variant='indigo'] {
   --rv-brand: #0d0053;
-  --rv-brand-soft: #0c0053;
   --rv-page: #f9f9ff;
   --rv-accent: #d5e0ee;
   --rv-muted: #8883a4;
   --rv-card: #ffffff;
+  --rv-hero-ink: #0d0053;
+  --rv-footer-ink: #d5e0ee;
 
   --rv-radius-btn: 5px;
   --rv-shadow-card: 10px 17px 99.1px #ededf8;
 
-  /* Hero wash and the two full-width bands, straight from the export. */
+  /* Pale diagonal wash: the photo stays visible, type stays dark. */
   --rv-hero-overlay: linear-gradient(94.83deg, #d5e0ee 11.42%, rgba(255, 255, 255, 0) 61.59%);
   --rv-band-a: linear-gradient(270deg, #d5e0ee 4.83%, #0c0053 121.63%);
   --rv-band-b: linear-gradient(90deg, #d5e0ee -21.63%, #0c0053 95.17%);
@@ -52,49 +60,66 @@
   --rv-font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* ── sand ──────────────────────────────────────────────────────────────── */
-[data-variant='sand'] {
-  --rv-brand: #3d2a16;
-  --rv-brand-soft: #3a2814;
-  --rv-page: #fdfbf7;
-  --rv-accent: #e8dcc8;
-  --rv-muted: #9c8f7a;
-  --rv-shadow-card: 10px 17px 99.1px #f2ece1;
-
-  --rv-hero-overlay: linear-gradient(94.83deg, #e8dcc8 11.42%, rgba(255, 255, 255, 0) 61.59%);
-  --rv-band-a: linear-gradient(270deg, #e8dcc8 4.83%, #3a2814 121.63%);
-  --rv-band-b: linear-gradient(90deg, #e8dcc8 -21.63%, #3a2814 95.17%);
-  --rv-promo: linear-gradient(324.1deg, #3d2a16 21%, #cbbda5 118.08%);
-}
-
-/* ── crimson ───────────────────────────────────────────────────────────── */
+/* ── crimson ───────────────────────────────────────────────────── exact ── */
 [data-variant='crimson'] {
-  --rv-brand: #5a0a14;
-  --rv-brand-soft: #560912;
-  --rv-page: #fff9f9;
-  --rv-accent: #eed5d8;
-  --rv-muted: #a4838a;
-  --rv-shadow-card: 10px 17px 99.1px #f8eaec;
+  --rv-brand: #ad0c14;
+  --rv-page: #ffffff;
+  --rv-accent: #eee7d5;
+  --rv-muted: #e46666;
+  --rv-card: #ffffff;
+  --rv-hero-ink: #ffffff;
+  --rv-footer-ink: #eee7d5;
 
-  --rv-hero-overlay: linear-gradient(94.83deg, #eed5d8 11.42%, rgba(255, 255, 255, 0) 61.59%);
-  --rv-band-a: linear-gradient(270deg, #eed5d8 4.83%, #560912 121.63%);
-  --rv-band-b: linear-gradient(90deg, #eed5d8 -21.63%, #560912 95.17%);
-  --rv-promo: linear-gradient(324.1deg, #5a0a14 21%, #cba8ad 118.08%);
+  --rv-shadow-card: 10px 17px 99.1px #f0eeec;
+
+  /* Saturated red-to-coral: the hero is the gradient, type goes white. */
+  --rv-hero-overlay: linear-gradient(270deg, #ad0c14 4.83%, #fd7b54 121.63%);
+  --rv-band-a: linear-gradient(270deg, #ad0c14 4.83%, #fd7b54 121.63%);
+  --rv-band-b: linear-gradient(90deg, #ad0c14 -21.63%, #fd7b54 95.17%);
+  --rv-promo: linear-gradient(324.1deg, #ad0c14 21%, #fd7b54 118.08%);
 }
 
-/* ── mono ──────────────────────────────────────────────────────────────── */
+/* ── clay ──────────────────────────────────────────────────────── exact ── */
+[data-variant='clay'] {
+  --rv-brand: #1c130d;
+  --rv-page: #ffffff;
+  --rv-accent: #eee7d5;
+  --rv-muted: #a48d83;
+  --rv-card: #ffffff;
+  --rv-hero-ink: #ffffff;
+  --rv-footer-ink: #eee7d5;
+
+  --rv-shadow-card: 10px 17px 99.1px #f0eeec;
+
+  /* Dark scrim over the photo rather than a colour wash. */
+  --rv-hero-overlay: linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.15) 60%, rgba(0, 0, 0, 0) 100%);
+  --rv-band-a: linear-gradient(270deg, #885e36 4.83%, #1c130d 121.63%);
+  --rv-band-b: linear-gradient(90deg, #885e36 -21.63%, #1c130d 95.17%);
+  --rv-promo: linear-gradient(324.1deg, #1c130d 21%, #885e36 118.08%);
+}
+
+/*
+ * ── mono ───────────────────────────────────────────────── DERIVED, not spec'd
+ *
+ * The other three come from Figma exports. This one is extrapolated from the
+ * same structure, following the clay pattern (white type on a dark scrim).
+ * Replace it if a real export turns up.
+ */
 [data-variant='mono'] {
   --rv-brand: #111111;
-  --rv-brand-soft: #0d0d0d;
-  --rv-page: #fafafa;
-  --rv-accent: #e4e4e4;
+  --rv-page: #ffffff;
+  --rv-accent: #e8e8e8;
   --rv-muted: #8a8a8a;
-  --rv-shadow-card: 10px 17px 99.1px #ededed;
+  --rv-card: #ffffff;
+  --rv-hero-ink: #ffffff;
+  --rv-footer-ink: #e8e8e8;
 
-  --rv-hero-overlay: linear-gradient(94.83deg, #e4e4e4 11.42%, rgba(255, 255, 255, 0) 61.59%);
-  --rv-band-a: linear-gradient(270deg, #e4e4e4 4.83%, #0d0d0d 121.63%);
-  --rv-band-b: linear-gradient(90deg, #e4e4e4 -21.63%, #0d0d0d 95.17%);
-  --rv-promo: linear-gradient(324.1deg, #111111 21%, #b4b4b4 118.08%);
+  --rv-shadow-card: 10px 17px 99.1px #eeeeee;
+
+  --rv-hero-overlay: linear-gradient(90deg, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.18) 60%, rgba(0, 0, 0, 0) 100%);
+  --rv-band-a: linear-gradient(270deg, #6e6e6e 4.83%, #111111 121.63%);
+  --rv-band-b: linear-gradient(90deg, #6e6e6e -21.63%, #111111 95.17%);
+  --rv-promo: linear-gradient(324.1deg, #111111 21%, #8a8a8a 118.08%);
 }
 
 body {
@@ -108,15 +133,7 @@ body {
   letter-spacing: 0.02em;
 }
 
-.rv-hero-overlay {
-  background-image: var(--rv-hero-overlay);
-}
-.rv-band-a {
-  background-image: var(--rv-band-a);
-}
-.rv-band-b {
-  background-image: var(--rv-band-b);
-}
-.rv-promo {
-  background-image: var(--rv-promo);
-}
+.rv-hero-overlay { background-image: var(--rv-hero-overlay); }
+.rv-band-a { background-image: var(--rv-band-a); }
+.rv-band-b { background-image: var(--rv-band-b); }
+.rv-promo { background-image: var(--rv-promo); }

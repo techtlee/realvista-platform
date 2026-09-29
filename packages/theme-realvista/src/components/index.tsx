@@ -253,15 +253,19 @@ const NAV = [
  * `overlay` keeps it transparent and absolutely placed, matching the export.
  */
 export function Header({ settings, overlay = false }: { settings: SiteSettings | null; overlay?: boolean }) {
+  // Over the hero the nav takes the hero's ink (white on crimson and clay,
+  // brand indigo on indigo); elsewhere it always sits on the page background.
+  const ink = overlay ? 'text-hero-ink' : 'text-brand'
+
   return (
     <header className={overlay ? 'absolute inset-x-0 top-0 z-40' : 'relative z-40'}>
       <Container className="flex h-[60px] items-center justify-between gap-6">
-        <a href="/" className="rv-track text-[16px] leading-[20px] text-brand">
+        <a href="/" className={`rv-track text-[16px] leading-[20px] ${ink}`}>
           {settings?.siteName ?? 'Realvista'}
         </a>
         <nav className="hidden items-center gap-8 md:flex">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} className="rv-track text-[16px] leading-[20px] text-brand hover:opacity-70">
+            <a key={n.href} href={n.href} className={`rv-track text-[16px] leading-[20px] ${ink} hover:opacity-70`}>
               {n.label}
             </a>
           ))}
@@ -361,7 +365,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
       <Container className="grid gap-12 lg:grid-cols-[420px_1fr_1fr_290px]">
         <div>
           <p className="rv-track text-[46px] font-bold leading-[60px] text-white">{name}</p>
-          <p className="mt-2 max-w-[420px] text-[16px] leading-[24px] text-accent">
+          <p className="mt-2 max-w-[420px] text-[16px] leading-[24px] text-footer-ink">
             {settings?.hero?.subheadline ?? ''}
           </p>
         </div>
@@ -376,7 +380,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
               { href: '/blog', label: 'Blog & Poradna' },
             ].map((l) => (
               <li key={l.href}>
-                <a href={l.href} className="text-[15px] leading-[20px] text-accent hover:text-white">
+                <a href={l.href} className="text-[15px] leading-[20px] text-footer-ink hover:text-white">
                   {l.label}
                 </a>
               </li>
@@ -386,7 +390,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
 
         <div>
           <p className="text-[18px] font-bold leading-[23px] text-white">Kancelář</p>
-          <ul className="mt-4 space-y-4 text-[15px] leading-[20px] text-accent">
+          <ul className="mt-4 space-y-4 text-[15px] leading-[20px] text-footer-ink">
             {c?.address ? <li className="whitespace-pre-line">{c.address}</li> : null}
             {c?.phone ? <li>{c.phone}</li> : null}
             {c?.email ? <li>{c.email}</li> : null}
@@ -395,7 +399,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
 
         <div className="rounded-btn border border-white/10 bg-white/5 p-5">
           <p className="text-[16px] font-bold leading-[21px] text-white">Odebírat novinky</p>
-          <p className="mt-2 text-[13px] leading-[18px] text-accent">
+          <p className="mt-2 text-[13px] leading-[18px] text-footer-ink">
             Buďte první, kdo se dozví o nových prémiových nemovitostech.
           </p>
           <div className="mt-6 flex h-[41px] items-center justify-between rounded-btn bg-white px-4">
@@ -411,15 +415,15 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
       </Container>
 
       <Container className="mt-[120px] flex flex-wrap items-center justify-between gap-4">
-        <p className="text-[15px] leading-[20px] text-accent">
+        <p className="text-[15px] leading-[20px] text-footer-ink">
           © {new Date().getFullYear()} {name}
           {settings?.agent?.licenceNumber ? ` · Osvědčení č. ${settings.agent.licenceNumber}` : ''}
         </p>
         <div className="flex gap-6">
-          <a href="/zasady-ochrany-osobnich-udaju" className="text-[15px] leading-[20px] text-accent hover:text-white">
+          <a href="/zasady-ochrany-osobnich-udaju" className="text-[15px] leading-[20px] text-footer-ink hover:text-white">
             GDPR
           </a>
-          <a href="/cookies" className="text-[15px] leading-[20px] text-accent hover:text-white">
+          <a href="/cookies" className="text-[15px] leading-[20px] text-footer-ink hover:text-white">
             Cookies
           </a>
         </div>

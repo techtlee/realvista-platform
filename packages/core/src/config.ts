@@ -13,7 +13,7 @@ import { z } from 'zod'
  * the Vercel build loudly instead.
  */
 
-const themeVariantSchema = z.enum(['indigo', 'sand', 'crimson', 'mono'])
+const themeVariantSchema = z.enum(['indigo', 'crimson', 'clay', 'mono'])
 
 const siteConfigSchema = z.object({
   /** Stable identifier, matching the tenant slug in the CMS. */

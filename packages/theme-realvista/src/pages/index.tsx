@@ -85,11 +85,11 @@ export function RealvistaHome({ settings, featured, all, posts = [], totalListin
         <Header settings={settings} overlay />
 
         <Container className="relative flex h-full flex-col justify-center">
-          <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-brand sm:text-[60px] sm:leading-[67px]">
+          <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-hero-ink sm:text-[60px] sm:leading-[67px]">
             {hero?.headline ?? 'Reality nejsou jen nemovitosti. Jsou to vaše další kroky.'}
           </h1>
           {hero?.subheadline ? (
-            <p className="mt-10 max-w-[530px] text-[22px] font-medium leading-[1.2] text-brand sm:text-[30px] sm:leading-[36px]">
+            <p className="mt-10 max-w-[530px] text-[22px] font-medium leading-[1.2] text-hero-ink sm:text-[30px] sm:leading-[36px]">
               {hero.subheadline}
             </p>
           ) : null}
