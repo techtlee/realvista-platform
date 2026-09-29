@@ -3,6 +3,7 @@ import { DM_Sans } from 'next/font/google'
 import type { ReactNode } from 'react'
 
 import site from '../site.config'
+import { VariantSwitcher } from './VariantSwitcher'
 import './globals.css'
 
 /**
@@ -24,7 +25,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   // The colour variant is a single attribute: one build serves all four.
   return (
     <html lang="cs" data-variant={site.theme.variant} className={dmSans.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Preview-only; never rendered on a real client site. */}
+        {process.env.NEXT_PUBLIC_VARIANT_PREVIEW === '1' ? (
+          <VariantSwitcher initial={site.theme.variant} />
+        ) : null}
+      </body>
     </html>
   )
 }
