@@ -126,23 +126,26 @@ Phase E — storefront, intake form, fleet dashboard
 
 ## Current state
 
-Last updated 2026-09-29.
+Last updated 2026-10-06.
 
 | Thing | Status |
 |---|---|
-| Plan | Approved |
-| Toolchain | node 26.5.0, npm 11.17.0, pnpm 12.6.0, git 2.50.1, gh 2.96.0 |
-| Postgres | **17.11 via Homebrew, running.** `makleri_dev` + `makleri_test` |
-| CMS | **Payload 3.90.2 + Next 16.3.3 + React 19.2.6.** Admin UI Czech throughout |
-| Tenancy | **Done.** `access/tenantScoped.ts` + 9 collections |
-| Content model | **Done.** Properties (incl. PENB), SiteSettings, Posts, Services, Enquiries, Leads |
-| Test suite | **57/57 passing**, `pnpm test:int`. Isolation is data-driven across every tenant collection |
-| HTTP isolation e2e | Spec written; **not yet executed** — Playwright Chromium install was still finishing |
-| Media pipeline | **Done.** Tenant-prefixed keys, EXIF stripping, 4 webp derivatives — all tested |
-| R2 credentials | **Not supplied yet.** Adapter is wired and disabled; uploads use local disk until `R2_*` is set |
-| Platform monorepo | `@makleri/config` built and smoke-tested; core/ui/theme still empty |
-| Theme REALVISTA | Not started |
-| GitHub org | Not created. No repo has been `git init`ed yet |
+| CMS | **Done.** Payload 3.90.2 + Postgres, Czech admin, 9 collections |
+| Tenancy | **Done.** Data-driven isolation suite, registry test blocks uncovered collections |
+| Media pipeline | **Done.** Tenant-prefixed keys, EXIF stripped, 4 webp derivatives |
+| Revalidation | **Done.** CMS calls the site on save/delete; edits appear in ~1s |
+| Theme REALVISTA | **Done.** Built from the Figma exports; indigo/crimson/clay exact, mono derived |
+| Demo site | **Done.** `apps/site`, 6 listings, 3 posts, variant switcher |
+| Tests | **97 passing** — 57 CMS int, 26 core, 13 e2e, 1 scaffold |
+| R2 credentials | Not supplied. Adapter wired and disabled; uploads on local disk |
+| Migrations | **None.** Dev uses schema push. Blocks production |
+| Deploy | Not deployed. No GitHub org, nothing pushed |
+
+### Next: mass production
+
+Plan at `~/.claude/plans/pasted-content-id-5758-let-me-memoized-thunder.md`.
+Layout #2 is being built imminently, so the theme contract lands first and
+layout #2 is built through it.
 
 ### Running it
 
@@ -230,3 +233,88 @@ This applies to every future theme Figma.
   This venture needs its own name and domain before repos and env vars get created.
 - **Pricing.** Deferred by D3, but needed before storefront copy.
 - **Theme 2.** Its scope affects how much gets generalized out of REALVISTA into `@makleri/core`.
+
+
+---
+
+# Theme contract — findings before layout #2
+
+Mapped 2026-10-06, before any second layout existed. If you are about to build
+one, read this first.
+
+## The CMS is already layout-agnostic
+
+`realvista` appears in **14 lines across 4 files**. No collection, field, hook or
+access function branches on theme name. Registering a layout is one entry in the
+`options` array of `theme.name` in `cms/src/collections/Tenants.ts`, then
+`pnpm generate:types`.
+
+## Three things block a second layout
+
+1. **`themeVariantSchema` in `@makleri/core/config` hard-codes REALVISTA's four
+   palette names** (`indigo | crimson | clay | mono`) into the package every site
+   depends on. A layout with a different palette cannot be configured without
+   editing core. Variants belong in each theme's manifest.
+
+2. **`--rv-` CSS tokens are unnamespaced.** Two themes loaded together — which a
+   gallery does by definition — collide silently. Each theme needs a token prefix,
+   and a check that it only defines tokens under it.
+
+3. **Czech domain logic lives inside the theme**: `formatPrice`,
+   `dispositionLabel`, `energyLabel`, `locationLabel`, `cardTitle`, the 14 kraje,
+   and a Lexical renderer. Theme #2 either copies ~90 lines or imports from theme
+   #1. Lifted to `@makleri/core/format`.
+
+## The contract today is unenforceable
+
+A theme exports three components whose names are hard-coded at the client-repo
+import site, with three bespoke prop interfaces. There is no shared type, so
+nothing guarantees two themes have compatible signatures. TypeScript can tell you
+an import failed; it cannot tell you a theme is *missing* a page.
+
+**7 of 13 files in `apps/site` change per theme.** The theme name is spelled in
+seven places with no single source of truth.
+
+The theme never receives `SiteConfig`. `pages.home.sections` is validated and
+then ignored — section order is hard-coded in JSX.
+
+## Dead code and phantom exports
+
+| Thing | Status |
+|---|---|
+| `theme-realvista/exports["./slots"]` | Declared, never built — importing it throws |
+| `core/exports["./seo"]` | Declared, never built. No metadata or JSON-LD anywhere |
+| `@makleri/ui` | In `MAKLERI_PACKAGES` for transpilation; package does not exist |
+| `apps/gallery` | Root script `dev:gallery` references it; app does not exist |
+| `.changeset/` | Three scripts and a devDependency; no config directory |
+| `defineOverrides` / `resolveSlots` | Zero call sites |
+| `services` prop on `RealvistaHome` | Required, passed, never rendered |
+
+`./slots` matters most: it is exactly what a new theme would reach for, and it
+throws.
+
+## Client-facing bugs, not tidiness
+
+- `/blog`, `/blog/[slug]`, `/zasady-ochrany-osobnich-udaju`, `/cookies` are
+  **linked from the header and footer and do not exist** → 404 on a live site.
+- `/api/poptavka` is the contact form's `action` and does not exist.
+  `cms.submitEnquiry()` in core has no caller. **The contact form silently
+  discards enquiries.** Fix before any real client goes live.
+
+## What is already right
+
+`@makleri/core` has zero dependency on any theme — the direction is correct. The
+content types are hand-written and deliberately frozen against Payload drift,
+exactly as a cross-theme contract should be. The theme reads only ~45 of ~110
+available fields, so a visually different layout has real headroom without
+touching the CMS.
+
+## Two couplings to watch
+
+**`services.icon` is a fixed eight-value set** (`home`, `key`, `chart`,
+`calculator`, `document`, `shield`, `handshake`, `camera`). Every theme must ship
+all eight; a gap renders an empty box, and only for clients using that service.
+
+**`hero.subheadline` does double duty** as the footer strapline, and
+`about.heading` is concatenated into agent prose. Both are REALVISTA decisions
+that a second theme should not be forced to copy.
