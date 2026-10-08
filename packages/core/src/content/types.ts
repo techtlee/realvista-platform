@@ -180,11 +180,32 @@ export interface Post {
   seo?: { title?: string | null; description?: string | null } | null
 }
 
+/**
+ * The fixed icon set, matching the `icon` select on the CMS `services`
+ * collection.
+ *
+ * A union rather than `string` so a theme's icon map is checked by the
+ * compiler. Every theme must ship all eight: a gap renders an empty box, and
+ * only for the clients who use that one service, so it reaches a paying
+ * customer before it reaches us. Adding a ninth is therefore a deliberate act
+ * that breaks every theme's build until each ships the icon — which is the
+ * intent.
+ */
+export type ServiceIcon =
+  | 'home'
+  | 'key'
+  | 'chart'
+  | 'calculator'
+  | 'document'
+  | 'shield'
+  | 'handshake'
+  | 'camera'
+
 export interface Service {
   id: number | string
   title: string
   description?: string | null
-  icon?: string | null
+  icon?: ServiceIcon | null
   order?: number | null
 }
 

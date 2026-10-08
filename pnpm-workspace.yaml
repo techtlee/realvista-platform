@@ -5,7 +5,7 @@ packages:
 # esbuild ships a prebuilt binary via a postinstall script; vitest needs it.
 # pnpm 12 reads this here, not from package.json or .npmrc.
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
 
 onlyBuiltDependencies:
   - esbuild
