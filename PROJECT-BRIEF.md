@@ -160,7 +160,7 @@ Last updated 2026-10-08.
 | Theme contract | **Done.** `@makleri/theme-kit` — types, fixtures, conformance |
 | Theme REALVISTA | **Done.** Implements `ThemeModule`; five pages, four colourways, passes conformance |
 | Demo site | **Done.** `apps/site`, 6 listings, 3 posts, blog, services, variant switcher |
-| Tests | **218 passing** — 57 CMS int, 52 core, 19 kit, 76 conformance, 13 e2e, 1 scaffold |
+| Tests | **217 passing** — 57 CMS int, 13 CMS e2e, 52 core, 19 kit, 76 conformance. All verified 2026-10-08. The previous "97" counted the scaffold spec twice; it is one of the 57 |
 | R2 credentials | Not supplied. Adapter wired and disabled; uploads on local disk |
 | Migrations | **None.** Dev uses schema push. Blocks production |
 | Deploy | Not deployed. No GitHub org, nothing pushed |
