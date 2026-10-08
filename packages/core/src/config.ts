@@ -13,7 +13,16 @@ import { z } from 'zod'
  * the Vercel build loudly instead.
  */
 
-const themeVariantSchema = z.enum(['indigo', 'crimson', 'clay', 'mono'])
+/**
+ * A colourway is any string here, and is checked against the theme instead.
+ *
+ * This used to be `z.enum(['indigo', 'crimson', 'clay', 'mono'])` — REALVISTA's
+ * four palette names, baked into the package every client site depends on. A
+ * second layout with a different palette could not be configured without
+ * editing core and shipping it to all sixty sites. Which colourways exist is a
+ * fact about a theme, so the theme is what validates it.
+ */
+const themeVariantSchema = z.string().min(1)
 
 const siteConfigSchema = z.object({
   /** Stable identifier, matching the tenant slug in the CMS. */
@@ -83,14 +92,29 @@ export type SiteConfig = z.output<typeof siteConfigSchema> & {
   siteUrl: string
 }
 
-export type ThemeVariant = z.infer<typeof themeVariantSchema>
+/**
+ * The shape `defineSiteConfig` needs in order to check a colourway.
+ *
+ * Structural on purpose: a real `ThemeModule` from `@makleri/theme-kit`
+ * satisfies it without core importing that package, so core keeps its one
+ * genuinely valuable property — it depends on no theme, and no theme kit.
+ */
+export interface ThemeVariantSource {
+  manifest: {
+    name: string
+    variants: { value: string; label?: { cs: string } }[]
+  }
+}
 
 /**
  * Validates and normalises a client site's configuration.
  *
  * @throws if the config is invalid — deliberately, at build time.
  */
-export function defineSiteConfig(input: SiteConfigInput): SiteConfig {
+export function defineSiteConfig(
+  input: SiteConfigInput,
+  theme?: ThemeVariantSource,
+): SiteConfig {
   const parsed = siteConfigSchema.safeParse(input)
 
   if (!parsed.success) {
@@ -106,6 +130,30 @@ export function defineSiteConfig(input: SiteConfigInput): SiteConfig {
   }
 
   const data = parsed.data
+
+  // Checked against the theme rather than a list in this package, so a layout
+  // can ship three colourways or nine without core knowing any of their names.
+  if (theme) {
+    const known = theme.manifest.variants.map((v) => v.value)
+
+    if (data.theme.name !== theme.manifest.name) {
+      throw new Error(
+        `site.config.ts for "${data.siteId}" names theme "${data.theme.name}", ` +
+          `but the theme passed in is "${theme.manifest.name}". The build is ` +
+          `failing rather than rendering one theme's pages with another's config.`,
+      )
+    }
+
+    if (!known.includes(data.theme.variant)) {
+      throw new Error(
+        `Invalid site.config.ts for "${data.siteId}":\n` +
+          `  • theme.variant: "${data.theme.variant}" is not a colourway of ` +
+          `"${theme.manifest.name}". Available: ${known.join(', ')}.\n\n` +
+          `An unknown variant renders the theme's default palette with no error, ` +
+          `so a typo would ship the wrong brand colour to a paying client.`,
+      )
+    }
+  }
 
   return {
     ...data,
