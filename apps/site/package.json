@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@makleri/core": "workspace:*",
+    "@makleri/theme-kit": "workspace:*",
     "@makleri/theme-realvista": "workspace:*",
     "next": "^16.0.0",
     "react": "^19.0.0",

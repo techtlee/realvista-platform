@@ -1,11 +1,11 @@
-import { RealvistaHome } from '@makleri/theme-realvista'
-
+import site from '../site.config'
 import { cms } from './cms'
+import theme from './theme'
 
 export const revalidate = 3600
 
 export default async function HomePage() {
-  const [settings, featured, all, services, posts] = await Promise.all([
+  const [settings, featured, listings, services, posts] = await Promise.all([
     cms.getSiteSettings(),
     cms.getFeaturedListings(8),
     cms.getListings({ limit: 50 }),
@@ -13,14 +13,17 @@ export default async function HomePage() {
     cms.getPosts(3).catch(() => ({ docs: [] })),
   ])
 
+  const { Home } = theme.pages
+
   return (
-    <RealvistaHome
+    <Home
+      site={site}
       settings={settings}
       featured={featured}
-      all={all.docs}
+      listings={listings.docs}
+      totalListings={listings.totalDocs}
       services={services}
       posts={posts.docs}
-      totalListings={all.totalDocs}
     />
   )
 }

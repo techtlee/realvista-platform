@@ -1,6 +1,6 @@
-import { RealvistaListingIndex } from '@makleri/theme-realvista'
-
+import site from '../../site.config'
 import { cms } from '../cms'
+import theme from '../theme'
 
 export const revalidate = 3600
 
@@ -10,5 +10,14 @@ export default async function ListingIndexPage() {
     cms.getListings({ limit: 50 }),
   ])
 
-  return <RealvistaListingIndex settings={settings} properties={listings.docs} />
+  const { ListingIndex } = theme.pages
+
+  return (
+    <ListingIndex
+      site={site}
+      settings={settings}
+      listings={listings.docs}
+      totalListings={listings.totalDocs}
+    />
+  )
 }

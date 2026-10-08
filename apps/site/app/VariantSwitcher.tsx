@@ -10,35 +10,40 @@ import { useEffect, useState } from 'react'
  * behind NEXT_PUBLIC_VARIANT_PREVIEW so a real client site never renders it —
  * a visitor restyling a realtor's brand would be absurd.
  *
+ * The list arrives from the theme's manifest rather than being spelled out
+ * here. It used to be a local copy of REALVISTA's four colourways, which meant
+ * a second layout would have previewed in the wrong palette names, and a
+ * colourway added to a theme would silently not appear.
+ *
  * It also honours `?varianta=` on load, which makes each colourway a shareable
  * URL — the storefront gallery will want exactly that.
  */
 
-const VARIANTS = [
-  { value: 'indigo', label: 'Indigová', swatch: '#0d0053' },
-  { value: 'crimson', label: 'Červená', swatch: '#ad0c14' },
-  { value: 'clay', label: 'Hnědá', swatch: '#1c130d' },
-  { value: 'mono', label: 'Černobílá', swatch: '#111111' },
-] as const
+export interface SwitcherVariant {
+  value: string
+  label: { cs: string }
+  swatch: string
+}
 
-type Variant = (typeof VARIANTS)[number]['value']
-
-const isVariant = (v: string | null): v is Variant =>
-  VARIANTS.some((x) => x.value === v)
-
-export function VariantSwitcher({ initial }: { initial: string }) {
+export function VariantSwitcher({
+  initial,
+  variants,
+}: {
+  initial: string
+  variants: readonly SwitcherVariant[]
+}) {
   const [active, setActive] = useState<string>(initial)
 
   // Apply `?varianta=` on first paint so a shared link opens in that colourway.
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get('varianta')
-    if (isVariant(fromUrl)) {
+    if (fromUrl && variants.some((v) => v.value === fromUrl)) {
       document.documentElement.setAttribute('data-variant', fromUrl)
       setActive(fromUrl)
     }
-  }, [])
+  }, [variants])
 
-  function pick(v: Variant) {
+  function pick(v: string) {
     document.documentElement.setAttribute('data-variant', v)
     setActive(v)
 
@@ -48,6 +53,8 @@ export function VariantSwitcher({ initial }: { initial: string }) {
     url.searchParams.set('varianta', v)
     window.history.replaceState({}, '', url)
   }
+
+  if (variants.length < 2) return null
 
   return (
     <div
@@ -69,7 +76,7 @@ export function VariantSwitcher({ initial }: { initial: string }) {
       }}
     >
       <span style={{ padding: '0 8px', fontSize: 12, color: '#555' }}>Vzhled</span>
-      {VARIANTS.map((v) => {
+      {variants.map((v) => {
         const on = active === v.value
         return (
           <button
@@ -77,7 +84,7 @@ export function VariantSwitcher({ initial }: { initial: string }) {
             type="button"
             onClick={() => pick(v.value)}
             aria-pressed={on}
-            title={v.label}
+            title={v.label.cs}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -101,7 +108,7 @@ export function VariantSwitcher({ initial }: { initial: string }) {
                 boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.15)',
               }}
             />
-            {v.label}
+            {v.label.cs}
           </button>
         )
       })}

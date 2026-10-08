@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
-import { RealvistaPropertyDetail } from '@makleri/theme-realvista'
 
+import site from '../../../site.config'
 import { cms } from '../../cms'
+import theme from '../../theme'
 
 export const revalidate = 3600
 
@@ -20,5 +21,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ slug:
     cms.getSimilarListings(property, 3),
   ])
 
-  return <RealvistaPropertyDetail settings={settings} property={property} similar={similar} />
+  const { PropertyDetail } = theme.pages
+
+  return <PropertyDetail site={site} settings={settings} property={property} similar={similar} />
 }
