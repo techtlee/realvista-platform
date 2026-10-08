@@ -22,10 +22,10 @@
       "import": "./dist/content/index.js",
       "default": "./dist/content/index.js"
     },
-    "./seo": {
-      "types": "./dist/seo/index.d.ts",
-      "import": "./dist/seo/index.js",
-      "default": "./dist/seo/index.js"
+    "./format": {
+      "types": "./dist/format/index.d.ts",
+      "import": "./dist/format/index.js",
+      "default": "./dist/format/index.js"
     },
     "./overrides": {
       "types": "./dist/overrides.d.ts",
