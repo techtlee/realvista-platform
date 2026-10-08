@@ -149,7 +149,7 @@ Phase E — storefront, intake form, fleet dashboard
 
 ## Current state
 
-Last updated 2026-10-08.
+Last updated 2026-10-09.
 
 | Thing | Status |
 |---|---|
@@ -164,6 +164,7 @@ Last updated 2026-10-08.
 | R2 credentials | Not supplied. Adapter wired and disabled; uploads on local disk |
 | Migrations | **None.** Dev uses schema push. Blocks production |
 | Deploy | Not deployed. No GitHub org, nothing pushed |
+| Backups | **None.** Neither repo has a git remote; both exist only on one Mac |
 | `/api/poptavka` | **Still missing.** The contact form discards enquiries. Fix before any client goes live |
 
 ### Next: mass production
@@ -371,6 +372,34 @@ Three traps in the toolchain, all of which cost time here:
   rather than left to fail.
 - **Section order is honoured on `Home` only.** `pages.property.sections` is
   still validated and ignored.
+
+- **Neither repo has a git remote.** `cms` and `platform` are local-only and
+  unpushed. Every commit described in this file exists on exactly one disk. This
+  is the cheapest item here and the only one that loses work outright.
+- **`apps/site` is not a client repo.** It lives inside the monorepo on
+  `workspace:*` deps, so the "~12 files installing from a registry" model has
+  never actually been run. Phase 1 found that every package emitted
+  extensionless relative imports — *no package could be loaded by Node at all* —
+  and it went unnoticed because the one consumer was a bundler in the same
+  workspace. Assume that is not the last bug of its class.
+- **`packages/ui` is an empty directory**, and `apps/gallery` / `apps/dashboard`
+  do not exist. Neither do the sibling repos: `storefront`, `site-template`,
+  `renovate-config`, `workflows`.
+
+## Where to pick up
+
+Verified 2026-10-09, in the order worth doing:
+
+1. **Push both repos to a remote.** Thirty minutes, removes the only risk here
+   that destroys work rather than delaying it.
+2. **Layout #2.** The cheapest moment to learn what else the contract got wrong,
+   and its test file is one line. Needs one CMS change — see below.
+3. **Migrations**, before anything is deployed. Schema push against real client
+   data is hand-written SQL or data loss.
+4. **`/api/poptavka`** and the two legal pages — small, and both become urgent
+   the moment a real client goes live, not before.
+
+Only 1 is urgent today. 3 and 4 are gated on a real client existing.
 
 ## What layout #2 should expect
 
