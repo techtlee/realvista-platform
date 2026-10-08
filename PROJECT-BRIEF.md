@@ -45,10 +45,11 @@ MIT, unlimited users, and ships a complete Czech admin translation (`cs.ts`, 731
 ## Architecture at a glance
 
 ```
-makleri/platform          monorepo, pnpm workspaces, changesets
+makleri/platform          monorepo, pnpm workspaces
   packages/config           @makleri/config          tsconfig, oxlint, createNextConfig()
-  packages/core             @makleri/core            CMS access, routing, SEO, overrides
-  packages/ui               @makleri/ui              shadcn-derived client primitives
+  packages/core             @makleri/core            CMS access, Czech formatting, routing, overrides
+  packages/theme-kit        @makleri/theme-kit       the theme contract: types, fixtures, conformance
+  packages/ui               @makleri/ui              shadcn-derived client primitives — NOT BUILT
   packages/theme-realvista  @makleri/theme-realvista the product
   apps/gallery              showcase · visual-regression target · storefront picker
   apps/dashboard            fleet dashboard
@@ -110,6 +111,28 @@ makleri/site-<client>     one per client, ~12 files
     Omitting it also omits the `prefix` field it injects, so media documents would
     have a different shape in development than in production.
 
+13. **A theme's manifest ships to the browser, so it holds data only.** No
+    `new URL(…, import.meta.url)`, no file paths, nothing resolved at import time.
+    Pointing it at the stylesheet made the bundler treat the CSS as a client asset
+    and fail the build on every page that imported the theme.
+
+14. **Relative imports in published packages need `.js` extensions.** `tsc` does
+    not add them, and Node will not resolve without them. Extensionless specifiers
+    appear to work for as long as the only consumer is a bundler in the same
+    workspace, and fail the moment a real client repo installs the package.
+
+15. **`next/font` only accepts explicitly written literals.** Weights, subsets
+    and the CSS variable cannot be read from a theme's manifest, so the font block
+    in a client repo is generated from it and verified against it with
+    `assertFontMatches`. Drift otherwise renders as a synthesised bold or Czech
+    characters in a fallback face.
+
+16. **`incremental: true` plus a deleted `dist/` produces a silently partial
+    build.** `tsc` trusts the `.tsbuildinfo` and emits nothing. Delete both or
+    neither — and remember that a theme resolves `@makleri/theme-kit` through its
+    `exports` map, so a test run against a stale `dist` passes for the wrong
+    reason. `pnpm test` builds first for exactly this.
+
 ## Build order
 
 Phase A — CMS foundation (Payload + Postgres + tenancy + **isolation test suite**)
@@ -126,7 +149,7 @@ Phase E — storefront, intake form, fleet dashboard
 
 ## Current state
 
-Last updated 2026-10-06.
+Last updated 2026-10-08.
 
 | Thing | Status |
 |---|---|
@@ -134,18 +157,23 @@ Last updated 2026-10-06.
 | Tenancy | **Done.** Data-driven isolation suite, registry test blocks uncovered collections |
 | Media pipeline | **Done.** Tenant-prefixed keys, EXIF stripped, 4 webp derivatives |
 | Revalidation | **Done.** CMS calls the site on save/delete; edits appear in ~1s |
-| Theme REALVISTA | **Done.** Built from the Figma exports; indigo/crimson/clay exact, mono derived |
-| Demo site | **Done.** `apps/site`, 6 listings, 3 posts, variant switcher |
-| Tests | **97 passing** — 57 CMS int, 26 core, 13 e2e, 1 scaffold |
+| Theme contract | **Done.** `@makleri/theme-kit` — types, fixtures, conformance |
+| Theme REALVISTA | **Done.** Implements `ThemeModule`; five pages, four colourways, passes conformance |
+| Demo site | **Done.** `apps/site`, 6 listings, 3 posts, blog, services, variant switcher |
+| Tests | **218 passing** — 57 CMS int, 52 core, 19 kit, 76 conformance, 13 e2e, 1 scaffold |
 | R2 credentials | Not supplied. Adapter wired and disabled; uploads on local disk |
 | Migrations | **None.** Dev uses schema push. Blocks production |
 | Deploy | Not deployed. No GitHub org, nothing pushed |
+| `/api/poptavka` | **Still missing.** The contact form discards enquiries. Fix before any client goes live |
 
 ### Next: mass production
 
 Plan at `~/.claude/plans/pasted-content-id-5758-let-me-memoized-thunder.md`.
-Layout #2 is being built imminently, so the theme contract lands first and
-layout #2 is built through it.
+
+**Phase 1 (the contract) is done** — all six steps, 2026-10-08. Phase 2 is
+layout #2, built *through* the contract, with the contract treated as editable:
+every place it chafes is a finding, and the fix goes in the contract rather than
+around it. See "Theme contract — built" below before starting.
 
 ### Running it
 
@@ -237,84 +265,125 @@ This applies to every future theme Figma.
 
 ---
 
-# Theme contract — findings before layout #2
+# Theme contract — built
 
-Mapped 2026-10-06, before any second layout existed. If you are about to build
-one, read this first.
+Phase 1 of the mass-production plan, completed 2026-10-08. Read this before
+building layout #2; it is what the contract is, what implementing it taught, and
+what is still open.
 
-## The CMS is already layout-agnostic
+## What exists
 
-`realvista` appears in **14 lines across 4 files**. No collection, field, hook or
-access function branches on theme name. Registering a layout is one entry in the
-`options` array of `theme.name` in `cms/src/collections/Tenants.ts`, then
-`pnpm generate:types`.
+`@makleri/theme-kit` — three exports.
 
-## Three things block a second layout
+- **`.`** — `ThemeModule` = `{ manifest, pages }`. Five pages, all required:
+  `Home`, `ListingIndex`, `PropertyDetail`, `BlogIndex`, `PostDetail`. Page props
+  are assembled only from `@makleri/core/content` types, which is the mechanism
+  that keeps the CMS fixed across layouts: a theme wanting a field the CMS lacks
+  fails to compile, and the fix is to add it once for every theme.
+- **`./fixtures`** — three tenants, parameterised by colourway. `full` (six
+  listings covering a plot with no disposition, a PENB exemption, a hidden
+  address, a photo-less listing, a sold one), `minimal` (settings `null`, one
+  listing with only required fields — the day-one null guard) and `empty`
+  (settings but nothing entered).
+- **`./conformance`** — `runThemeConformance(theme, { packageRoot })`. A theme's
+  whole test file is that one call. REALVISTA: **76 tests**.
 
-1. **`themeVariantSchema` in `@makleri/core/config` hard-codes REALVISTA's four
-   palette names** (`indigo | crimson | clay | mono`) into the package every site
-   depends on. A layout with a different palette cannot be configured without
-   editing core. Variants belong in each theme's manifest.
+The manifest carries name, label, version, `tokenPrefix`, font, colourways, all
+eight service icons, the stylesheet subpath, and `routes` — any route the theme
+links to beyond the five the contract guarantees.
 
-2. **`--rv-` CSS tokens are unnamespaced.** Two themes loaded together — which a
-   gallery does by definition — collide silently. Each theme needs a token prefix,
-   and a check that it only defines tokens under it.
+## The three blockers, resolved
 
-3. **Czech domain logic lives inside the theme**: `formatPrice`,
-   `dispositionLabel`, `energyLabel`, `locationLabel`, `cardTitle`, the 14 kraje,
-   and a Lexical renderer. Theme #2 either copies ~90 lines or imports from theme
-   #1. Lifted to `@makleri/core/format`.
+1. **Core no longer knows REALVISTA's palette.** `themeVariantSchema` is
+   `z.string()`; `defineSiteConfig(config, theme)` validates the colourway
+   against `theme.manifest.variants` and names the real ones in the error. The
+   theme argument is typed structurally (`ThemeVariantSource`, declared in core),
+   so core still imports no theme and no theme kit.
+2. **Tokens are namespaced and it is checked.** Conformance fails any custom
+   property declared outside `--<prefix>-`. REALVISTA already complied; the check
+   is for layout #2.
+3. **Czech domain logic is in `@makleri/core/format`** and the theme imports it.
+   Worth knowing why this mattered: the theme's own copy of
+   `pricePerSquareMetre` had already drifted — it divided a monthly rent by floor
+   area and printed the result as a purchase price per m².
 
-## The contract today is unenforceable
+## The client repo
 
-A theme exports three components whose names are hard-coded at the client-repo
-import site, with three bespoke prop interfaces. There is no shared type, so
-nothing guarantees two themes have compatible signatures. TypeScript can tell you
-an import failed; it cannot tell you a theme is *missing* a page.
+Seven files named the theme; now one does.
 
-**7 of 13 files in `apps/site` change per theme.** The theme name is spelled in
-seven places with no single source of truth.
+```ts
+// app/theme.ts
+export { default } from '@makleri/theme-realvista'
+```
 
-The theme never receives `SiteConfig`. `pages.home.sections` is validated and
-then ignored — section order is hard-coded in JSX.
+Two files still spell it, and both have a reason that is not fixable in the
+contract: `globals.css` needs a literal `@source` path because Tailwind v4 will
+not scan `node_modules`, and `layout.tsx` needs a literal `next/font` call
+because Next reads it statically at build time. Both are generated per site. The
+font block is checked against the manifest at module load by
+`assertFontMatches`, because drift otherwise shows up as a synthesised bold or
+Czech characters in a fallback face — neither of which looks like a bug.
 
-## Dead code and phantom exports
+## What the contract got wrong, and how
 
-| Thing | Status |
+Written against one theme, it was wrong in four places. Each was found by
+implementing it, which is the argument for building layout #2 immediately.
+
+| What | Why it broke |
 |---|---|
-| `theme-realvista/exports["./slots"]` | Declared, never built — importing it throws |
-| `core/exports["./seo"]` | Declared, never built. No metadata or JSON-LD anywhere |
-| `@makleri/ui` | In `MAKLERI_PACKAGES` for transpilation; package does not exist |
-| `apps/gallery` | Root script `dev:gallery` references it; app does not exist |
-| `.changeset/` | Three scripts and a devDependency; no config directory |
-| `defineOverrides` / `resolveSlots` | Zero call sites |
-| `services` prop on `RealvistaHome` | Required, passed, never rendered |
+| `stylesheetPath` on the manifest | The manifest ships to the browser. `new URL('…theme.css', import.meta.url)` made the bundler treat the CSS as a client asset and fail the build. Conformance takes the package root from the test file instead |
+| Font options read from the manifest | `next/font` rejects anything that is not an explicit literal. Hence `assertFontMatches` rather than a shared value |
+| Link check counted every `href` | React 19 emits `<link rel="preload" href="…">` for images during render, so every photo read as a broken route. It matches anchors only |
+| Extensionless relative imports | Every package had them. They worked solely because the one consumer was a bundler inside the same workspace — Node could not load the packages at all, which a real client repo would have hit on day one |
 
-`./slots` matters most: it is exactly what a new theme would reach for, and it
-throws.
+Three traps in the toolchain, all of which cost time here:
 
-## Client-facing bugs, not tidiness
+- **`incremental: true` plus a deleted `dist/` produces a silently partial
+  build.** `tsc` trusts the `.tsbuildinfo` and emits nothing. Delete both or
+  neither.
+- **A theme resolves the kit through its `exports` map, i.e. `dist`.** A test run
+  against a stale build passes for the wrong reason. The root `test` script now
+  builds first.
+- **Vitest needs `esbuild: { jsx: 'automatic' }`.** The shared tsconfig sets
+  `jsx: preserve` for Next, which leaves esbuild on the classic runtime and
+  every component throws "React is not defined".
 
-- `/blog`, `/blog/[slug]`, `/zasady-ochrany-osobnich-udaju`, `/cookies` are
-  **linked from the header and footer and do not exist** → 404 on a live site.
-- `/api/poptavka` is the contact form's `action` and does not exist.
-  `cms.submitEnquiry()` in core has no caller. **The contact form silently
-  discards enquiries.** Fix before any real client goes live.
+## Still open
 
-## What is already right
+- **`/api/poptavka` does not exist.** The contact form posts to it and
+  `cms.submitEnquiry()` has no caller, so enquiries are silently discarded. The
+  form now takes its action as a prop and carries the listing id, so the route is
+  all that is missing. **This should jump the queue if any real client site is
+  going live.**
+- **`/zasady-ochrany-osobnich-udaju` and `/cookies` still 404.** They are linked
+  from the footer on every page. They are declared in
+  `manifest.routes`, which turns a silent 404 into something conformance reads
+  back — but declaring is not fixing. The content already exists in the CMS
+  (`settings.legal.privacyPolicy`, `cookieNotice`), so this is a small page plus
+  two route files. Delete those two lines from the manifest when it lands and the
+  check starts enforcing them for free.
+- **Two themes in one document still collide on Tailwind's tokens.** The
+  `--rv-` namespace is enforced, but both themes map into `--color-brand` inside
+  `@theme inline`, and that is how Tailwind utilities work. A gallery showing two
+  layouts on one page needs iframes, or a per-theme utility prefix. Decide before
+  `apps/gallery` is built — it is a design question, not a bug.
+- **`apps/gallery` still does not exist.** The script that referenced it is gone
+  rather than left to fail.
+- **Section order is honoured on `Home` only.** `pages.property.sections` is
+  still validated and ignored.
 
-`@makleri/core` has zero dependency on any theme — the direction is correct. The
-content types are hand-written and deliberately frozen against Payload drift,
-exactly as a cross-theme contract should be. The theme reads only ~45 of ~110
-available fields, so a visually different layout has real headroom without
-touching the CMS.
+## What layout #2 should expect
 
-## Two couplings to watch
+The CMS needs exactly one change: a `theme.name` option in
+`cms/src/collections/Tenants.ts`, then `pnpm generate:types`. If layout #2 needs
+anything else from the CMS, that is the contract leaking and the thing to fix.
 
-**`services.icon` is a fixed eight-value set** (`home`, `key`, `chart`,
-`calculator`, `document`, `shield`, `handshake`, `camera`). Every theme must ship
-all eight; a gap renders an empty box, and only for clients using that service.
+Its test file is:
 
-**`hero.subheadline` does double duty** as the footer strapline, and
-`about.heading` is concatenated into agent prose. Both are REALVISTA decisions
-that a second theme should not be forced to copy.
+```ts
+runThemeConformance(theme, { packageRoot: new URL('..', import.meta.url) })
+```
+
+Two couplings it should not inherit. `hero.subheadline` doubles as the footer
+strapline, and `about.heading` is rendered as the agent band's headline — both
+REALVISTA decisions a second layout is free to ignore.
