@@ -7,8 +7,8 @@ import {
   internalLinks,
   strayTokens,
   usesThemeInline,
-} from '../src/conformance/checks'
-import { themeFixtures } from '../src/fixtures/index'
+} from '../src/conformance/checks.js'
+import { themeFixtures } from '../src/fixtures/index.js'
 
 /**
  * Tests for the gate itself.
@@ -62,6 +62,17 @@ describe('danglingLinks', () => {
       <a href="#kontakt">Kontakt</a>
     `
     expect(internalLinks(html)).toEqual([])
+    expect(danglingLinks(html)).toEqual([])
+  })
+
+  it('ignores the preload links React emits for images', () => {
+    // React 19 injects <link rel="preload" as="image" href="…"> during render.
+    // Counting those reported every photo in the fixtures as a broken route.
+    const html = `
+      <link rel="preload" as="image" href="/media/file/fixture-1-hero.webp"/>
+      <a href="/nemovitosti">Nemovitosti</a>
+    `
+    expect(internalLinks(html)).toEqual(['/nemovitosti'])
     expect(danglingLinks(html)).toEqual([])
   })
 

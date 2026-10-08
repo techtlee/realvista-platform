@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { defineSiteConfig } from '../src/config'
+import { defineSiteConfig } from '../src/config.js'
 
 const minimal = {
   siteId: 'novak-reality',

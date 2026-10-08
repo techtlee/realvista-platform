@@ -11,11 +11,11 @@ import type {
   PropertyDetailPageProps,
   ThemeModule,
   ThemePageName,
-} from '../index'
-import { THEME_PAGES } from '../index'
-import type { ThemeFixture } from '../fixtures/index'
-import { CZECH_DIACRITICS, SERVICE_ICONS, themeFixtures } from '../fixtures/index'
-import { cssVariants, danglingLinks, strayTokens, usesThemeInline } from './checks'
+} from '../index.js'
+import { THEME_PAGES } from '../index.js'
+import type { ThemeFixture } from '../fixtures/index.js'
+import { CZECH_DIACRITICS, SERVICE_ICONS, themeFixtures } from '../fixtures/index.js'
+import { cssVariants, danglingLinks, strayTokens, usesThemeInline } from './checks.js'
 
 /**
  * The conformance suite — the deliverable that keeps the CMS fixed.
@@ -82,10 +82,25 @@ function buildProps(theme: ThemeModule, f: ThemeFixture) {
   return props
 }
 
+/** Normalises a package root to a directory URL, so `new URL` resolves inside it. */
+function toDirUrl(root: string | URL): URL {
+  const url = typeof root === 'string' ? new URL(root, 'file://') : new URL(root.href)
+  if (!url.pathname.endsWith('/')) url.pathname += '/'
+  return url
+}
+
 const render = (theme: ThemeModule, page: ThemePageName, props: unknown): string =>
   renderToStaticMarkup(createElement(theme.pages[page] as never, props as never))
 
 export interface ConformanceOptions {
+  /**
+   * The theme package's root, so the stylesheet can be read from disk.
+   *
+   * A test file passes `new URL('..', import.meta.url)`. It is not on the
+   * manifest because the manifest ships to the browser, where a resolved file
+   * URL to a .css is both useless and a build error.
+   */
+  packageRoot?: string | URL
   /**
    * Skip the stylesheet checks.
    *
@@ -220,7 +235,15 @@ export function runThemeConformance(theme: ThemeModule, options: ConformanceOpti
     const describeStyles = options.skipStyles ? describe.skip : describe
 
     describeStyles('stylesheet', () => {
-      const css = readFileSync(manifest.stylesheetPath, 'utf8')
+      if (!options.packageRoot) {
+        throw new Error(
+          `runThemeConformance(${name}) needs { packageRoot } to find ` +
+            `"${manifest.stylesheet}". Pass new URL('..', import.meta.url) from ` +
+            `the theme's test file, or skipStyles for a theme still being built.`,
+        )
+      }
+
+      const css = readFileSync(new URL(manifest.stylesheet, toDirUrl(options.packageRoot)), 'utf8')
       const prefix = `--${manifest.tokenPrefix}-`
 
       it('uses @theme inline', () => {
@@ -261,4 +284,4 @@ export function runThemeConformance(theme: ThemeModule, options: ConformanceOpti
 }
 
 export { CZECH_DIACRITICS, themeFixtures }
-export * from './checks'
+export * from './checks.js'

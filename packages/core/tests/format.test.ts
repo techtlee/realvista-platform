@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Property } from '../src/content/types'
+import type { Property } from '../src/content/types.js'
 import {
   CZ_REGIONS,
   cardTitle,
@@ -16,7 +16,7 @@ import {
   regionLabel,
   richTextToParagraphs,
   statusBadge,
-} from '../src/format'
+} from '../src/format/index.js'
 
 /**
  * The Czech presentation layer is the one piece of logic every theme shares, so

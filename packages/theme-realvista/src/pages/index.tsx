@@ -1,4 +1,25 @@
-import type { Post, Property, Service, SiteSettings } from '@makleri/core/content'
+import type {
+  BlogIndexPageProps,
+  HomePageProps,
+  ListingIndexPageProps,
+  PostDetailPageProps,
+  PropertyDetailPageProps,
+} from '@makleri/theme-kit'
+import {
+  conditionLabel,
+  dispositionLabel,
+  energyLabel,
+  featureLabel,
+  formatDate,
+  formatPrice,
+  imageUrl,
+  locationLabel,
+  ownershipLabel,
+  pricePerSquareMetre,
+  propertyHeading,
+  regionCounts,
+} from '@makleri/core/format'
+import type { ReactNode } from 'react'
 
 import {
   Container,
@@ -8,72 +29,55 @@ import {
   Header,
   MorePropertiesCard,
   OutlineButton,
+  PageHeading,
+  PostCard,
   PropertyCard,
   RegionChip,
+  RichText,
+  ServicesSection,
   SolidButton,
   SpecPill,
-  conditionLabel,
-  dispositionLabel,
-  energyLabel,
-  featureLabel,
-  formatPrice,
-  imageUrl,
-  locationLabel,
-  ownershipLabel,
-  pricePerSquareMetre,
-} from '../components'
+} from '../components/index.js'
 
-const REGIONS: { value: string; label: string }[] = [
-  { value: 'praha', label: 'Praha' },
-  { value: 'stredocesky', label: 'Středočeský kraj' },
-  { value: 'jihocesky', label: 'Jihočeský kraj' },
-  { value: 'plzensky', label: 'Plzeňský kraj' },
-  { value: 'karlovarsky', label: 'Karlovarský kraj' },
-  { value: 'ustecky', label: 'Ústecký kraj' },
-  { value: 'liberecky', label: 'Liberecký kraj' },
-  { value: 'kralovehradecky', label: 'Královéhradecký kraj' },
-  { value: 'pardubicky', label: 'Pardubický kraj' },
-  { value: 'vysocina', label: 'Kraj Vysočina' },
-  { value: 'jihomoravsky', label: 'Jihomoravský kraj' },
-  { value: 'olomoucky', label: 'Olomoucký kraj' },
-  { value: 'zlinsky', label: 'Zlínský kraj' },
-  { value: 'moravskoslezsky', label: 'Moravskoslezský kraj' },
-]
+/**
+ * REALVISTA's five pages.
+ *
+ * Every one takes its props from `@makleri/theme-kit`, which assembles them
+ * only out of `@makleri/core/content` types. That is the mechanism, not a
+ * convention: this file cannot reach for a field the CMS does not have without
+ * failing to compile, so a second layout cannot quietly require a schema change.
+ */
 
-/** Only regions that actually have listings — an empty filter chip is a dead end. */
-function regionCounts(properties: Property[]) {
-  const counts = new Map<string, number>()
-  for (const p of properties) {
-    const r = p.address?.region
-    if (r) counts.set(r, (counts.get(r) ?? 0) + 1)
-  }
-  return REGIONS.filter((r) => counts.has(r.value)).map((r) => ({
-    ...r,
-    count: counts.get(r.value) as number,
-  }))
-}
+// ── home ─────────────────────────────────────────────────────────────────────
 
-export interface HomeProps {
-  settings: SiteSettings | null
-  featured: Property[]
-  all: Property[]
-  services: Service[]
-  posts?: Post[]
-  totalListings?: number
-}
+/** The order the design draws, used when the client repo does not say. */
+const DEFAULT_SECTIONS = ['hero', 'featured', 'services', 'agent', 'stats', 'contact', 'blog']
 
-export function RealvistaHome({ settings, featured, all, posts = [], totalListings }: HomeProps) {
+export function RealvistaHome({
+  site,
+  settings,
+  featured,
+  listings,
+  totalListings,
+  services,
+  posts,
+}: HomePageProps) {
   const hero = settings?.hero
   const agent = settings?.agent
   const heroSrc = imageUrl(hero?.backgroundImage, 'hero')
-  const regions = regionCounts(all)
-  const grid = featured.length > 0 ? featured : all.slice(0, 8)
-  const remaining = Math.max((totalListings ?? all.length) - grid.length, 0)
+  const regions = regionCounts(listings)
+  const grid = featured.length > 0 ? featured : listings.slice(0, 8)
+  const remaining = Math.max(totalListings - grid.length, 0)
 
-  return (
-    <>
-      {/* Hero — 700px, photo with the diagonal wash from the export */}
-      <section className="relative isolate h-[700px] overflow-hidden">
+  // `pages.home.sections` was validated by core and then ignored, because the
+  // order was hard-coded in JSX. Unknown ids are skipped rather than throwing:
+  // a Tier 3 client repo registers its own section ids, and a config naming one
+  // this theme does not implement should drop it, not break the build.
+  const order = site.pages.home?.sections ?? DEFAULT_SECTIONS
+
+  const sections: Record<string, ReactNode> = {
+    hero: (
+      <section key="hero" className="relative isolate h-[700px] overflow-hidden">
         {heroSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={heroSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -95,9 +99,10 @@ export function RealvistaHome({ settings, featured, all, posts = [], totalListin
           ) : null}
         </Container>
       </section>
+    ),
 
-      {/* Listings */}
-      <section id="nabidka" className="pt-[150px]">
+    featured: (
+      <section key="featured" id="nabidka" className="pt-[150px]">
         <Container>
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
@@ -126,66 +131,72 @@ export function RealvistaHome({ settings, featured, all, posts = [], totalListin
             </div>
           ) : null}
 
-          <div className="mt-[30px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {grid.map((p) => (
-              <PropertyCard key={p.id} property={p} />
-            ))}
-            {remaining > 0 ? <MorePropertiesCard count={remaining} href="/nemovitosti" /> : null}
-          </div>
+          {grid.length > 0 ? (
+            <div className="mt-[30px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {grid.map((p) => (
+                <PropertyCard key={p.id} property={p} />
+              ))}
+              {remaining > 0 ? <MorePropertiesCard count={remaining} href="/nemovitosti" /> : null}
+            </div>
+          ) : (
+            <p className="rv-track mt-[50px] text-[16px] leading-[22px] text-muted">
+              Právě připravujeme nové nabídky. Ozvěte se a dám vám vědět jako prvním.
+            </p>
+          )}
         </Container>
       </section>
+    ),
 
-      {/* Agent band */}
-      {agent ? (
-        <section id="o-makleri" className="rv-band-a relative mt-[150px] py-[55px]">
-          <Container className="grid items-center gap-10 lg:grid-cols-[1fr_420px]">
-            <div className="lg:pl-[110px]">
-              <h2 className="max-w-[530px] text-[30px] font-medium leading-[36px] text-white">
-                Reality nejsou jen cihly. Jsou to vaše další životní kroky.
-              </h2>
-              <p className="rv-track mt-5 max-w-[640px] text-[16px] leading-[22px] text-white">
-                {agent.jobTitle ? `${agent.name} — ${agent.jobTitle}. ` : `${agent.name}. `}
-                {settings?.about?.heading ?? ''}
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                {agent.phone ? (
-                  <GhostButton href={`tel:${agent.phone.replace(/\s/g, '')}`}>{agent.phone}</GhostButton>
-                ) : null}
-              </div>
+    services: <ServicesSection key="services" services={services} />,
+
+    agent: agent ? (
+      <section key="agent" id="o-makleri" className="rv-band-a relative mt-[150px] py-[55px]">
+        <Container className="grid items-center gap-10 lg:grid-cols-[1fr_420px]">
+          <div className="lg:pl-[110px]">
+            <h2 className="max-w-[530px] text-[30px] font-medium leading-[36px] text-white">
+              {settings?.about?.heading ?? 'Reality nejsou jen cihly. Jsou to vaše další životní kroky.'}
+            </h2>
+            <p className="rv-track mt-5 max-w-[640px] text-[16px] leading-[22px] text-white">
+              {agent.jobTitle ? `${agent.name} — ${agent.jobTitle}.` : `${agent.name}.`}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {agent.phone ? (
+                <GhostButton href={`tel:${agent.phone.replace(/\s/g, '')}`}>{agent.phone}</GhostButton>
+              ) : null}
             </div>
-            {imageUrl(agent.photo, 'card') ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl(agent.photo, 'card')}
-                alt={agent.name}
-                className="mx-auto h-[459px] w-[420px] object-cover object-top"
-              />
-            ) : null}
-          </Container>
-        </section>
-      ) : null}
+          </div>
+          {imageUrl(agent.photo, 'card') ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl(agent.photo, 'card')}
+              alt={agent.name}
+              className="mx-auto h-[459px] w-[420px] object-cover object-top"
+            />
+          ) : null}
+        </Container>
+      </section>
+    ) : null,
 
-      {/* Stats band */}
-      {settings?.stats?.length ? (
-        <section className="rv-band-b py-[72px]">
-          <Container>
-            <dl className="grid gap-12 text-center sm:grid-cols-3">
-              {settings.stats.map((s, i) => (
-                <div key={i}>
-                  <dt className="text-[60px] font-medium leading-[67px] text-white">{s.value}</dt>
-                  <dd className="mt-4 text-[30px] font-medium leading-[36px] text-white">{s.label}</dd>
-                </div>
-              ))}
-            </dl>
-          </Container>
-        </section>
-      ) : null}
+    stats: settings?.stats?.length ? (
+      <section key="stats" className="rv-band-b py-[72px]">
+        <Container>
+          <dl className="grid gap-12 text-center sm:grid-cols-3">
+            {settings.stats.map((s, i) => (
+              <div key={i}>
+                <dt className="text-[60px] font-medium leading-[67px] text-white">{s.value}</dt>
+                <dd className="mt-4 text-[30px] font-medium leading-[36px] text-white">{s.label}</dd>
+              </div>
+            ))}
+          </dl>
+        </Container>
+      </section>
+    ) : null,
 
-      <ContactSection settings={settings} />
+    contact: <ContactSection key="contact" settings={settings} />,
 
-      {/* Blog */}
-      {posts.length > 0 ? (
-        <section className="pb-[150px]">
+    blog:
+      posts.length > 0 ? (
+        <section key="blog" className="pb-[150px] pt-[150px]">
           <Container>
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div>
@@ -199,50 +210,67 @@ export function RealvistaHome({ settings, featured, all, posts = [], totalListin
               </SolidButton>
             </div>
 
-            <div className="mt-[106px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-[60px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {posts.slice(0, 3).map((post) => (
-                <a key={post.id} href={`/blog/${post.slug}`} className="group block">
-                  <div className="h-[235px] overflow-hidden bg-accent">
-                    {imageUrl(post.coverImage, 'card') ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={imageUrl(post.coverImage, 'card')}
-                        alt=""
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        loading="lazy"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="min-h-[180px] bg-card p-[30px] shadow-card">
-                    <p className="text-[16px] font-bold leading-[20px] text-brand">{post.title}</p>
-                    {post.publishedAt ? (
-                      <p className="rv-track mt-5 text-[16px] leading-[20px] text-brand opacity-40">
-                        {new Date(post.publishedAt).toLocaleDateString('cs-CZ')}
-                      </p>
-                    ) : null}
-                    {post.excerpt ? (
-                      <p className="rv-track mt-5 text-[16px] leading-[20px] text-brand">{post.excerpt}</p>
-                    ) : null}
-                  </div>
-                </a>
+                <PostCard key={post.id} post={post} />
               ))}
             </div>
           </Container>
         </section>
-      ) : null}
+      ) : null,
+  }
 
+  return (
+    <>
+      {order.map((id) => sections[id] ?? null)}
+      {/* The hero carries the header; any other opening section needs its own. */}
+      {order[0] !== 'hero' ? <Header settings={settings} /> : null}
       <Footer settings={settings} />
     </>
   )
 }
 
-export interface PropertyDetailProps {
-  settings: SiteSettings | null
-  property: Property
-  similar: Property[]
+// ── listing index ────────────────────────────────────────────────────────────
+
+export function RealvistaListingIndex({ settings, listings, totalListings }: ListingIndexPageProps) {
+  return (
+    <>
+      <Header settings={settings} />
+      <Container className="py-[90px]">
+        <h1 className="text-[30px] font-medium leading-[36px] text-brand">Nabídka nemovitostí</h1>
+        <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
+          {listingCount(totalListings)}
+        </p>
+        {listings.length > 0 ? (
+          <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {listings.map((p) => (
+              <PropertyCard key={p.id} property={p} />
+            ))}
+          </div>
+        ) : (
+          <p className="rv-track mt-[50px] text-[16px] leading-[22px] text-muted">
+            Momentálně nemám žádnou nemovitost v nabídce. Napište mi, co hledáte — ozvu se,
+            jakmile se objeví něco vhodného.
+          </p>
+        )}
+      </Container>
+      <ContactSection settings={settings} />
+      <Footer settings={settings} />
+    </>
+  )
 }
 
-export function RealvistaPropertyDetail({ settings, property, similar }: PropertyDetailProps) {
+/** Czech counts decline: 1 nemovitost, 2–4 nemovitosti, 5+ nemovitostí. */
+function listingCount(n: number): string {
+  if (n === 0) return 'Žádná nemovitost v nabídce'
+  if (n === 1) return '1 nemovitost v nabídce'
+  if (n < 5) return `${n} nemovitosti v nabídce`
+  return `${n} nemovitostí v nabídce`
+}
+
+// ── property detail ──────────────────────────────────────────────────────────
+
+export function RealvistaPropertyDetail({ settings, property, similar }: PropertyDetailPageProps) {
   const gallery = property.gallery ?? []
   const [main, ...rest] = gallery
   const agent = settings?.agent
@@ -272,7 +300,9 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
 
   const specPills = [
     property.usableArea ? `${property.usableArea} m²` : undefined,
-    dispositionLabel(property.disposition) ? `Dispozice ${dispositionLabel(property.disposition)}` : undefined,
+    dispositionLabel(property.disposition)
+      ? `Dispozice ${dispositionLabel(property.disposition)}`
+      : undefined,
     property.features?.[0] ? featureLabel(property.features[0]) : undefined,
     ownershipLabel(property.ownership) ? `${ownershipLabel(property.ownership)} vlastnictví` : undefined,
   ].filter(Boolean) as string[]
@@ -281,61 +311,64 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
     <>
       <Header settings={settings} />
 
-      {/* Breadcrumbs */}
       <Container className="pt-[40px]">
         <nav className="flex flex-wrap items-center gap-2 text-[14px] leading-[18px] text-muted">
-          <a href="/nemovitosti" className="hover:text-brand">Nemovitosti</a>
+          <a href="/nemovitosti" className="hover:text-brand">
+            Nemovitosti
+          </a>
           <span>›</span>
           <span>{locationLabel(property)}</span>
           <span>›</span>
-          <span className="font-medium text-brand">{cardHeading(property)}</span>
+          <span className="font-medium text-brand">{propertyHeading(property)}</span>
         </nav>
       </Container>
 
-      {/* Gallery */}
-      <Container className="mt-[38px]">
-        <div className="grid gap-5 lg:grid-cols-[640px_1fr]">
-          <div className="h-[320px] overflow-hidden rounded-btn bg-accent sm:h-[500px]">
-            {imageUrl(main?.image, 'hero') ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl(main?.image, 'hero')}
-                alt={main?.alt ?? property.title}
-                className="h-full w-full object-cover"
-              />
+      {gallery.length > 0 ? (
+        <Container className="mt-[38px]">
+          <div className="grid gap-5 lg:grid-cols-[640px_1fr]">
+            <div className="h-[320px] overflow-hidden rounded-btn bg-accent sm:h-[500px]">
+              {imageUrl(main?.image, 'hero') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl(main?.image, 'hero')}
+                  alt={main?.alt ?? property.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : null}
+            </div>
+
+            {rest.length > 0 ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                {rest.slice(0, 4).map((g, i) => (
+                  <div key={i} className="h-[150px] overflow-hidden rounded-btn bg-accent sm:h-[240px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl(g.image, 'card')}
+                      alt={g.alt ?? ''}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
             ) : null}
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            {rest.slice(0, 4).map((g, i) => (
-              <div key={i} className="h-[150px] overflow-hidden rounded-btn bg-accent sm:h-[240px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imageUrl(g.image, 'card')}
-                  alt={g.alt ?? ''}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
+          {gallery.length > 5 ? (
+            <div className="mt-5 flex justify-end">
+              <div className="flex h-[50px] w-full items-center justify-between rounded-btn bg-brand px-[30px] sm:w-[310px]">
+                <span className="text-[16px] font-bold leading-[20px] text-white">Všechny fotky</span>
+                <span className="text-[16px] font-bold leading-[20px] text-white opacity-60">
+                  +{gallery.length - 5}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {gallery.length > 5 ? (
-          <div className="mt-5 flex justify-end">
-            <div className="flex h-[50px] w-full items-center justify-between rounded-btn bg-brand px-[30px] sm:w-[310px]">
-              <span className="text-[16px] font-bold leading-[20px] text-white">Všechny fotky</span>
-              <span className="text-[16px] font-bold leading-[20px] text-white opacity-60">
-                +{gallery.length - 5}
-              </span>
             </div>
-          </div>
-        ) : null}
-      </Container>
+          ) : null}
+        </Container>
+      ) : null}
 
-      {/* Summary card */}
       <Container className="mt-[50px]">
-        <div className="flex flex-wrap items-start justify-between gap-6 rounded-btn bg-card px-[50px] py-[30px] shadow-card">
+        <div className="flex flex-wrap items-start justify-between gap-6 rounded-btn bg-card px-5 py-[30px] shadow-card sm:px-[50px]">
           <div>
             <h1 className="max-w-[595px] text-[30px] font-medium leading-[36px] text-brand">
               {property.title}
@@ -355,13 +388,13 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
         </div>
       </Container>
 
-      {/* Description + agent card */}
-      <Container className="mt-[100px] grid gap-[130px] lg:grid-cols-[640px_1fr]">
+      <Container className="mt-[100px] grid gap-[60px] lg:grid-cols-[640px_1fr] lg:gap-[130px]">
         <div>
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Popis nemovitosti</h2>
-          <div className="mt-[50px] text-[16px] leading-[26px] text-brand">
-            <RichText value={property.description} />
-          </div>
+          <RichText
+            value={property.description}
+            className="mt-[50px] text-[16px] leading-[26px] text-brand"
+          />
 
           <h2 className="mt-[100px] text-[30px] font-medium leading-[39px] text-brand">
             Parametry nemovitosti
@@ -408,7 +441,9 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
             </div>
 
             <div className="mt-[40px] flex flex-wrap gap-3">
-              <SolidButton href="#kontakt" className="flex-1">Domluvit prohlídku</SolidButton>
+              <SolidButton href="#kontakt" className="flex-1">
+                Domluvit prohlídku
+              </SolidButton>
               {agent.phone ? (
                 <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
                   Zavolat makléři
@@ -428,7 +463,6 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
         ) : null}
       </Container>
 
-      {/* Location */}
       {property.address?.city ? (
         <Container className="mt-[100px]">
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Lokalita</h2>
@@ -441,16 +475,111 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
         </Container>
       ) : null}
 
-      {/* Similar */}
       {similar.length > 0 ? (
         <Container className="mt-[100px]">
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Podobné nemovitosti</h2>
           <p className="mt-2 text-[16px] leading-[21px] text-muted">
             Prohlédněte si další exkluzivní nemovitosti v okolí.
           </p>
-          <div className="mt-[76px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {similar.map((p) => (
               <PropertyCard key={p.id} property={p} />
+            ))}
+          </div>
+        </Container>
+      ) : null}
+
+      <div className="mt-[150px]">
+        {/* The enquiry arrives attached to the listing it was sent from. */}
+        <ContactSection settings={settings} propertyId={property.id} />
+      </div>
+
+      <Footer settings={settings} />
+    </>
+  )
+}
+
+// ── blog ─────────────────────────────────────────────────────────────────────
+
+export function RealvistaBlogIndex({ settings, posts }: BlogIndexPageProps) {
+  return (
+    <>
+      <Header settings={settings} />
+      <PageHeading
+        title="Vědomosti a praxe"
+        lead="Zkušenosti z trhu, hloubkové analýzy a praktické tipy k prodeji i pronájmu."
+      />
+      <Container className="pb-[150px] pt-[50px]">
+        {posts.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <p className="rv-track text-[16px] leading-[22px] text-muted">
+            Zatím tu nic není. Připravuji první články.
+          </p>
+        )}
+      </Container>
+      <Footer settings={settings} />
+    </>
+  )
+}
+
+export function RealvistaPostDetail({ settings, post, recent }: PostDetailPageProps) {
+  const cover = imageUrl(post.coverImage, 'hero')
+  const date = formatDate(post.publishedAt)
+
+  return (
+    <>
+      <Header settings={settings} />
+
+      <Container className="pt-[40px]">
+        <nav className="flex flex-wrap items-center gap-2 text-[14px] leading-[18px] text-muted">
+          <a href="/blog" className="hover:text-brand">
+            Blog
+          </a>
+          <span>›</span>
+          <span className="font-medium text-brand">{post.title}</span>
+        </nav>
+      </Container>
+
+      <Container className="pt-[40px]">
+        <h1 className="max-w-[900px] text-[40px] font-medium leading-[1.12] text-brand sm:text-[60px] sm:leading-[67px]">
+          {post.title}
+        </h1>
+        {date ? (
+          <p className="rv-track mt-5 text-[16px] leading-[20px] text-muted">{date}</p>
+        ) : null}
+      </Container>
+
+      {cover ? (
+        <Container className="mt-[50px]">
+          <div className="h-[320px] overflow-hidden rounded-btn bg-accent sm:h-[500px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover}
+              alt={post.coverImage?.alt ?? ''}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        </Container>
+      ) : null}
+
+      <Container className="mt-[60px] max-w-[760px]">
+        {post.excerpt ? (
+          <p className="text-[22px] font-medium leading-[32px] text-brand">{post.excerpt}</p>
+        ) : null}
+        <RichText value={post.body} className="mt-[40px] text-[16px] leading-[26px] text-brand" />
+      </Container>
+
+      {recent.length > 0 ? (
+        <Container className="mt-[150px]">
+          <h2 className="text-[30px] font-medium leading-[36px] text-brand">Další články</h2>
+          <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {recent.map((p) => (
+              <PostCard key={p.id} post={p} />
             ))}
           </div>
         </Container>
@@ -461,64 +590,6 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
       </div>
 
       <Footer settings={settings} />
-    </>
-  )
-}
-
-export interface ListingIndexProps {
-  settings: SiteSettings | null
-  properties: Property[]
-}
-
-export function RealvistaListingIndex({ settings, properties }: ListingIndexProps) {
-  return (
-    <>
-      <Header settings={settings} />
-      <Container className="py-[90px]">
-        <h1 className="text-[30px] font-medium leading-[36px] text-brand">Nabídka nemovitostí</h1>
-        <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
-          {properties.length} nemovitostí v nabídce
-        </p>
-        <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {properties.map((p) => (
-            <PropertyCard key={p.id} property={p} />
-          ))}
-        </div>
-      </Container>
-      <ContactSection settings={settings} />
-      <Footer settings={settings} />
-    </>
-  )
-}
-
-function cardHeading(p: Property): string {
-  const d = dispositionLabel(p.disposition)
-  return d ? `Byt ${d}` : p.title
-}
-
-/**
- * Minimal Lexical renderer.
- *
- * Payload stores rich text as a Lexical tree. Only the node types the CMS can
- * currently produce are handled; anything unknown falls back to its text so a
- * new node type degrades to plain prose rather than blanking the description.
- */
-function RichText({ value }: { value: unknown }) {
-  const root = (value as { root?: { children?: unknown[] } } | null)?.root
-  if (!root?.children) return null
-
-  return (
-    <>
-      {root.children.map((node, i) => {
-        const n = node as { type?: string; children?: { text?: string }[] }
-        const text = (n.children ?? []).map((c) => c.text ?? '').join('')
-        if (!text) return null
-        return (
-          <p key={i} className="mb-4 last:mb-0">
-            {text}
-          </p>
-        )
-      })}
     </>
   )
 }

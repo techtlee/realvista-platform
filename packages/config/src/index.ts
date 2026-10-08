@@ -34,9 +34,16 @@ export interface NextConfigInput {
   extend?: NextConfig
 }
 
+/**
+ * Packages Next must transpile on a client site.
+ *
+ * These ship ESM with JSX compiled to the automatic runtime, which Next will
+ * not process from node_modules by default. `@makleri/ui` was listed here and
+ * has never existed; the theme, which actually needs it, was not.
+ */
 const MAKLERI_PACKAGES = [
   '@makleri/core',
-  '@makleri/ui',
+  '@makleri/theme-kit',
 ] as const
 
 /**

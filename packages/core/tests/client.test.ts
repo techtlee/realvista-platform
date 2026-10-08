@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createCmsClient, CmsError } from '../src/content/client'
-import type { Property } from '../src/content/types'
+import { createCmsClient, CmsError } from '../src/content/client.js'
+import type { Property } from '../src/content/types.js'
 
 interface Call {
   url: string

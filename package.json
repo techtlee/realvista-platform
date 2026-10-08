@@ -9,15 +9,11 @@
   "packageManager": "pnpm@12.6.0",
   "scripts": {
     "build": "pnpm -r --filter './packages/*' build",
-    "dev:gallery": "pnpm --filter @makleri/gallery dev",
+    "test": "pnpm build && pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "lint": "oxlint .",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "lint": "oxlint ."
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.0",
     "oxlint": "^1.0.0",
     "typescript": "^5.7.0"
   }

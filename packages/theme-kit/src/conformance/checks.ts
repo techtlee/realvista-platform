@@ -21,12 +21,17 @@ const toPattern = (route: string) =>
 /**
  * Internal link targets in rendered markup.
  *
- * Only same-origin paths: `mailto:`, `tel:`, absolute URLs and bare fragments
+ * Anchors only. React 19 emits `<link rel="preload" href="…">` for images it
+ * sees during render, and those hrefs are media URLs that no router ever
+ * resolves — counting them reported every photo in the fixtures as a broken
+ * route.
+ *
+ * Same-origin paths only: `mailto:`, `tel:`, absolute URLs and bare fragments
  * are somebody else's problem, and a fragment resolves on the page it is on.
  */
 export function internalLinks(html: string): string[] {
   const found = new Set<string>()
-  for (const m of html.matchAll(/href="([^"]*)"/g)) {
+  for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]*)"/g)) {
     const raw = m[1] ?? ''
     if (!raw.startsWith('/')) continue
     const path = raw.split('?')[0]?.split('#')[0] ?? ''

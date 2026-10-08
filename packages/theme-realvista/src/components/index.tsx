@@ -1,5 +1,16 @@
-import type { Media, Property, SiteSettings } from '@makleri/core/content'
+import type { Post, Property, Service, SiteSettings } from '@makleri/core/content'
+import {
+  cardTitle,
+  featureLabel,
+  formatDate,
+  formatPrice,
+  imageUrl,
+  richTextToParagraphs,
+  statusBadge,
+} from '@makleri/core/format'
 import type { ReactNode } from 'react'
+
+import { ServiceGlyph } from '../icons.js'
 
 /**
  * REALVISTA building blocks, matching the Figma CSS export.
@@ -12,84 +23,11 @@ import type { ReactNode } from 'react'
  * Exported so a client repo can *wrap* a default rather than reimplement it.
  * All Server Components: nothing here may import client-only APIs, because
  * server rendering of listing pages is the whole SEO story.
+ *
+ * Nothing here formats a price, a disposition or an address. That is
+ * `@makleri/core/format`, shared by every theme — "Třída B" has to mean the
+ * same thing to a buyer whichever layout their realtor bought.
  */
-
-export function imageUrl(
-  media: Media | null | undefined,
-  size: 'thumbnail' | 'card' | 'hero' | 'full' = 'card',
-) {
-  if (!media) return undefined
-  // Left relative on purpose: media is tenant-scoped, so the site proxies it
-  // under the same path with its own key. R2 returns absolute URLs untouched.
-  return media.sizes?.[size]?.url ?? media.url ?? undefined
-}
-
-export function formatPrice(p: Property): string {
-  const price = p.price
-  if (!price || price.onRequest || price.amount == null) return 'Cena na vyžádání'
-
-  const amount = new Intl.NumberFormat('cs-CZ').format(price.amount)
-  const suffix =
-    p.transactionType === 'pronajem' ? (price.period === 'rok' ? ' / rok' : ' / měsíc') : ''
-  return `${amount} Kč${suffix}`
-}
-
-/** `108 846 Kč / m²` — shown under the price on the detail page. */
-export function pricePerSquareMetre(p: Property): string | undefined {
-  const amount = p.price?.amount
-  const area = p.usableArea
-  if (!amount || !area || p.price?.onRequest) return undefined
-  return `${new Intl.NumberFormat('cs-CZ').format(Math.round(amount / area))} Kč / m²`
-}
-
-const DISPOSITION_LABELS: Record<string, string> = {
-  garsoniera: 'Garsoniéra', '1-kk': '1+kk', '1-1': '1+1', '2-kk': '2+kk', '2-1': '2+1',
-  '3-kk': '3+kk', '3-1': '3+1', '4-kk': '4+kk', '4-1': '4+1', '5-kk': '5+kk', '5-1': '5+1',
-  '6-a-vice': '6 a více', atypicky: 'Atypický',
-}
-export const dispositionLabel = (v?: string | null) => (v ? (DISPOSITION_LABELS[v] ?? v) : undefined)
-
-const FEATURE_LABELS: Record<string, string> = {
-  balkon: 'Balkon', lodzie: 'Lodžie', terasa: 'Terasa', sklep: 'Sklep', garaz: 'Garáž',
-  parkovani: 'Parkování', vytah: 'Výtah', zahrada: 'Zahrada', bazen: 'Bazén', krb: 'Krb',
-  klimatizace: 'Klimatizace', bezbarierovy: 'Bezbariérový', vybaveno: 'Vybaveno',
-  'castecne-vybaveno': 'Částečně vybaveno', nevybaveno: 'Nevybaveno', internet: 'Internet',
-  'mhd-v-dosahu': 'MHD v dosahu',
-}
-export const featureLabel = (v: string) => FEATURE_LABELS[v] ?? v
-
-const OWNERSHIP_LABELS: Record<string, string> = {
-  osobni: 'Osobní', druzstevni: 'Družstevní', statni: 'Státní / obecní',
-}
-const CONDITION_LABELS: Record<string, string> = {
-  novostavba: 'Novostavba', 'velmi-dobry': 'Velmi dobrý', dobry: 'Dobrý',
-  'po-rekonstrukci': 'Po kompletní rekonstrukci', 'pred-rekonstrukci': 'Před rekonstrukcí',
-  spatny: 'Špatný', 'k-demolici': 'K demolici', 've-vystavbe': 'Ve výstavbě', projekt: 'Projekt',
-}
-const ENERGY_LABELS: Record<string, string> = {
-  A: 'Třída A — Mimořádně úsporná', B: 'Třída B — Velmi úsporná', C: 'Třída C — Úsporná',
-  D: 'Třída D — Méně úsporná', E: 'Třída E — Nehospodárná', F: 'Třída F — Velmi nehospodárná',
-  G: 'Třída G — Mimořádně nehospodárná',
-  EXEMPT: 'Zákonná výjimka', PENDING: 'Průkaz se zpracovává',
-}
-
-export const ownershipLabel = (v?: string | null) => (v ? (OWNERSHIP_LABELS[v] ?? v) : undefined)
-export const conditionLabel = (v?: string | null) => (v ? (CONDITION_LABELS[v] ?? v) : undefined)
-export const energyLabel = (v?: string | null) => (v ? (ENERGY_LABELS[v] ?? v) : undefined)
-
-export function locationLabel(p: Property): string {
-  const a = p.address
-  if (!a) return ''
-  const parts = a.hideExactAddress ? [a.city, a.cityPart] : [a.street, a.cityPart, a.city]
-  return parts.filter(Boolean).join(', ')
-}
-
-/** The card headline in the design reads "3+kk Praha 7 Holešovice". */
-export function cardTitle(p: Property): string {
-  const d = dispositionLabel(p.disposition)
-  const place = [p.address?.city, p.address?.cityPart].filter(Boolean).join(' ')
-  return [d, place].filter(Boolean).join(' ') || p.title
-}
 
 /** 1440 canvas − 2×70 gutters = 1300. */
 export function Container({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -169,16 +107,13 @@ export function SpecPill({ children }: { children: ReactNode }) {
   )
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  reserved: 'Rezervováno', sold: 'Prodáno', rented: 'Pronajato',
-}
-
 /** 420-wide listing card: 235px image, white info block, soft shadow. */
 export function PropertyCard({ property }: { property: Property }) {
   const cover = property.gallery?.[0]?.image
   const src = imageUrl(cover, 'card')
   const photoCount = property.gallery?.length ?? 0
-  const status = STATUS_LABELS[property.status]
+  // Only the statuses worth showing a visitor; draft and active render nothing.
+  const status = statusBadge(property.status)
   const firstFeature = property.features?.[0]
 
   return (
@@ -276,7 +211,17 @@ export function Header({ settings, overlay = false }: { settings: SiteSettings |
 }
 
 /** Shared contact block: 60px heading left, underlined form right. */
-export function ContactSection({ settings }: { settings: SiteSettings | null }) {
+export function ContactSection({
+  settings,
+  action = '/api/poptavka',
+  propertyId,
+}: {
+  settings: SiteSettings | null
+  /** Where the form posts. The client repo owns the route; see manifest.routes. */
+  action?: string
+  /** Set on a listing page so the enquiry arrives attached to that listing. */
+  propertyId?: number | string
+}) {
   const c = settings?.contact
   const line = 'w-full border-0 border-b border-muted bg-transparent pb-2 text-[16px] font-medium leading-[20px] text-brand outline-none placeholder:text-muted focus:border-brand'
 
@@ -300,7 +245,11 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
 
         <div>
           <h3 className="text-[30px] font-medium leading-[36px] text-brand">Pojďme se spojit</h3>
-          <form method="post" action="/api/poptavka" className="mt-12 space-y-10">
+          <form method="post" action={action} className="mt-12 space-y-10">
+            {propertyId != null ? (
+              <input type="hidden" name="propertyId" value={String(propertyId)} />
+            ) : null}
+
             <div className="grid gap-10 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">
@@ -429,5 +378,106 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
         </div>
       </Container>
     </footer>
+  )
+}
+
+/**
+ * Lexical rich text, as REALVISTA paragraphs.
+ *
+ * The flattening itself is `@makleri/core/format` — a theme decides the element
+ * and the spacing, not what the document says.
+ */
+export function RichText({ value, className = '' }: { value: unknown; className?: string }) {
+  const paragraphs = richTextToParagraphs(value)
+  if (paragraphs.length === 0) return null
+
+  return (
+    <div className={className}>
+      {paragraphs.map((text, i) => (
+        <p key={i} className="mb-4 last:mb-0">
+          {text}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Services.
+ *
+ * This section had no implementation at all: `services` was a required prop on
+ * the homepage, passed from the client repo, and never rendered. A realtor
+ * filling in the Služby collection saw nothing appear on their site.
+ */
+export function ServicesSection({ services }: { services: Service[] }) {
+  if (services.length === 0) return null
+
+  return (
+    <section id="sluzby" className="pt-[150px]">
+      <Container>
+        <h2 className="text-[30px] font-medium leading-[36px] text-brand">Co pro vás zajistím</h2>
+        <p className="rv-track mt-4 max-w-[520px] text-[16px] leading-[20px] text-brand">
+          Od prvního ocenění po předání klíčů.
+        </p>
+
+        <div className="mt-[50px] grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {services.map((s) => (
+            <div key={s.id} className="bg-card p-[30px] shadow-card">
+              <ServiceGlyph icon={s.icon} className="h-8 w-8 text-brand" />
+              <p className="mt-6 text-[16px] font-bold leading-[20px] text-brand">{s.title}</p>
+              {s.description ? (
+                <p className="rv-track mt-3 text-[16px] leading-[22px] text-muted">{s.description}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </Container>
+    </section>
+  )
+}
+
+/** Blog card: 235px cover, white info block, matching the listing card. */
+export function PostCard({ post }: { post: Post }) {
+  const src = imageUrl(post.coverImage, 'card')
+
+  return (
+    <a href={`/blog/${post.slug}`} className="group block">
+      <div className="h-[235px] overflow-hidden bg-accent">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt={post.coverImage?.alt ?? ''}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : null}
+      </div>
+      <div className="min-h-[180px] bg-card p-[30px] shadow-card">
+        <p className="text-[16px] font-bold leading-[20px] text-brand">{post.title}</p>
+        {formatDate(post.publishedAt) ? (
+          <p className="rv-track mt-5 text-[16px] leading-[20px] text-brand opacity-40">
+            {formatDate(post.publishedAt)}
+          </p>
+        ) : null}
+        {post.excerpt ? (
+          <p className="rv-track mt-5 text-[16px] leading-[20px] text-brand">{post.excerpt}</p>
+        ) : null}
+      </div>
+    </a>
+  )
+}
+
+/** Shared page heading for the secondary pages. */
+export function PageHeading({ title, lead }: { title: string; lead?: string }) {
+  return (
+    <Container className="pt-[90px]">
+      <h1 className="max-w-[900px] text-[40px] font-medium leading-[1.12] text-brand sm:text-[60px] sm:leading-[67px]">
+        {title}
+      </h1>
+      {lead ? (
+        <p className="rv-track mt-5 max-w-[640px] text-[16px] leading-[22px] text-brand">{lead}</p>
+      ) : null}
+    </Container>
   )
 }

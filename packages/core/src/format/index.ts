@@ -1,4 +1,4 @@
-import type { Media, Property } from '../content/types'
+import type { Media, Property } from '../content/types.js'
 
 /**
  * Czech real-estate presentation logic, shared by every theme.

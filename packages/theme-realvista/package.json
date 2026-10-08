@@ -18,22 +18,24 @@
       "import": "./dist/components/index.js",
       "default": "./dist/components/index.js"
     },
-    "./slots": {
-      "types": "./dist/slots.d.ts",
-      "import": "./dist/slots.js",
-      "default": "./dist/slots.js"
-    },
-    "./styles/theme.css": "./styles/theme.css"
+    "./styles/theme.css": "./styles/theme.css",
+    "./manifest": {
+      "types": "./dist/manifest.d.ts",
+      "import": "./dist/manifest.js",
+      "default": "./dist/manifest.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@makleri/core": "workspace:*",
     "next": "^15.0.0 || ^16.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@makleri/theme-kit": "workspace:*"
   },
   "devDependencies": {
     "@makleri/config": "workspace:*",
@@ -42,7 +44,11 @@
     "next": "^16.0.0",
     "react": "^19.0.0",
     "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "@makleri/theme-kit": "workspace:*",
+    "react-dom": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "vitest": "^3.0.0"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

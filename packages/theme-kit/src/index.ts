@@ -132,8 +132,13 @@ export interface ThemeFont {
   googleFont: string
   weights: string[]
   subsets: string[]
-  /** CSS variable the font is exposed as, e.g. `--font-dm-sans`. */
-  cssVariable: string
+  /**
+   * CSS variable the font is exposed as, e.g. `--font-dm-sans`.
+   *
+   * Typed as a custom-property name because `next/font` requires one: a plain
+   * `string` makes the client repo's font call fail to typecheck.
+   */
+  cssVariable: `--${string}`
 }
 
 export interface ThemeManifest {
@@ -161,11 +166,14 @@ export interface ThemeManifest {
    */
   icons: Record<ServiceIcon, ComponentType<ServiceIconProps>>
   /**
-   * Absolute path to the theme's stylesheet, so conformance can read it.
+   * The stylesheet's path inside the package, matching its `exports` entry.
    *
-   * Themes set it with `new URL('../styles/theme.css', import.meta.url)`.
+   * A plain string, not a resolved URL. The manifest is imported by the client
+   * bundle, and `new URL('…/theme.css', import.meta.url)` here made the bundler
+   * treat the stylesheet as a client asset and fail the build. Conformance
+   * resolves it against the package root the test file passes in.
    */
-  stylesheetPath: string
+  stylesheet: string
   /**
    * Routes this theme links to beyond the five the contract guarantees.
    *
@@ -214,4 +222,47 @@ export function defaultVariant(theme: ThemeModule): string {
     )
   }
   return first.value
+}
+
+/**
+ * Checks a client repo's font call against the theme that asked for it.
+ *
+ * `next/font` only accepts explicitly written literals — the export name, the
+ * weights and the subsets cannot come from a variable — so the font block in a
+ * client repo's layout is generated per theme and then cannot read the
+ * manifest. That leaves the two free to drift, and the failure is close to
+ * invisible: the wrong weight renders as a synthesised bold, and a missing
+ * `latin-ext` only shows on the Czech characters.
+ *
+ * So the literals stay, and this says so out loud when they stop matching.
+ */
+export function assertFontMatches(
+  expected: ThemeFont,
+  actual: { weights: readonly string[]; subsets: readonly string[]; cssVariable: string },
+  themeName = 'the theme',
+): void {
+  const problems: string[] = []
+  const differs = (a: readonly string[], b: readonly string[]) =>
+    a.length !== b.length || a.some((v, i) => v !== b[i])
+
+  if (differs(expected.weights, actual.weights)) {
+    problems.push(`weights: theme wants [${expected.weights}], layout loads [${actual.weights}]`)
+  }
+  if (differs(expected.subsets, actual.subsets)) {
+    problems.push(`subsets: theme wants [${expected.subsets}], layout loads [${actual.subsets}]`)
+  }
+  if (expected.cssVariable !== actual.cssVariable) {
+    problems.push(
+      `cssVariable: theme wants ${expected.cssVariable}, layout exposes ${actual.cssVariable}`,
+    )
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      `The font loaded in app/layout.tsx does not match ${themeName}'s manifest:\n` +
+        problems.map((p) => `  • ${p}`).join('\n') +
+        `\n\nnext/font needs literals, so this file is generated from the manifest ` +
+        `and cannot read it. Regenerate it rather than editing either half.`,
+    )
+  }
 }

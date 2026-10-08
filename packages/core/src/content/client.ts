@@ -6,7 +6,7 @@ import type {
   Property,
   Service,
   SiteSettings,
-} from './types'
+} from './types.js'
 
 /**
  * Typed access to one tenant's content.
