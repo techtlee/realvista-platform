@@ -73,17 +73,26 @@ const shape = {
     locale: z.enum(LOCALES),
   }),
 
-  domain: z.object({
-    situation: z.enum(DOMAIN_SITUATIONS),
-    name: z.string().trim().toLowerCase().regex(HOSTNAME).optional(),
-    registrar: z.enum(REGISTRARS).optional(),
-    emailOnDomain: z.enum(EMAIL_ON_DOMAIN),
-  }),
+  /**
+   * Optional: the storefront does not ask. Settled in the qualification call
+   * and stored on the lead; {@link createProvisioningSchema} requires it.
+   */
+  domain: z
+    .object({
+      situation: z.enum(DOMAIN_SITUATIONS),
+      name: z.string().trim().toLowerCase().regex(HOSTNAME).optional(),
+      registrar: z.enum(REGISTRARS).optional(),
+      emailOnDomain: z.enum(EMAIL_ON_DOMAIN),
+    })
+    .optional(),
 
-  plan: z.object({
-    tier: z.enum(PLAN_TIERS),
-    billingPeriod: z.enum(BILLING_PERIODS),
-  }),
+  /** Optional for the same reason as `domain`. */
+  plan: z
+    .object({
+      tier: z.enum(PLAN_TIERS),
+      billingPeriod: z.enum(BILLING_PERIODS),
+    })
+    .optional(),
 
   source: z
     .object({
@@ -117,10 +126,63 @@ export type Selection = SelectionV1
 
 /**
  * v1 as it arrives from the storefront: strict, and checked against the
- * catalog of themes on sale today.
+ * catalog of themes on sale today. `domain` and `plan` may be absent.
  */
 export function createIntakeSchema(catalog: Catalog) {
-  return z.strictObject(shape).superRefine((s, ctx) => {
+  return z.strictObject(shape).superRefine(checkAgainstCatalog(catalog))
+}
+
+/**
+ * v1 as handed to `/create-website`: the intake rules, plus `domain` and
+ * `plan` are required. Build the input with {@link buildProvisioningJson}.
+ */
+export function createProvisioningSchema(catalog: Catalog) {
+  return z
+    .strictObject({ ...shape, domain: shape.domain.unwrap(), plan: shape.plan.unwrap() })
+    .superRefine(checkAgainstCatalog(catalog))
+}
+
+export type ProvisioningJson = z.output<ReturnType<typeof createProvisioningSchema>>
+
+/** Staff-entered qualification facts. Nullable because CMS fields come back null when empty. */
+export interface QualificationFacts {
+  domain: {
+    situation: string | null
+    name?: string | null
+    registrar?: string | null
+    emailOnDomain: string | null
+  }
+  plan: { tier: string | null; billingPeriod: string | null }
+}
+
+/**
+ * The provisioning JSON: the stored selection with the lead's `domain` and
+ * `plan` put in. The lead's values win over anything the selection carried.
+ *
+ * Does not validate: parse the result with {@link createProvisioningSchema},
+ * whose issues say what qualification still has to fill in. The selection is
+ * read through {@link selectionV1Schema} first so keys the stored copy has
+ * but v1 no longer knows are dropped instead of failing the strict schema.
+ * Empty and null fields are left out, so "not filled in yet" reports as
+ * missing rather than as an invalid value.
+ */
+export function buildProvisioningJson(selection: unknown, facts: QualificationFacts): SelectionV1Input {
+  const base = selectionV1Schema.parse(selection)
+  return {
+    ...base,
+    domain: compact(facts.domain) as SelectionV1Input['domain'],
+    plan: compact(facts.plan) as SelectionV1Input['plan'],
+  }
+}
+
+function compact<T extends object>(o: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== null && v !== undefined && v !== ''),
+  ) as Partial<T>
+}
+
+function checkAgainstCatalog(catalog: Catalog) {
+  return (s: z.output<z.ZodObject<typeof shape>>, ctx: z.RefinementCtx) => {
     const theme = findTheme(catalog, s.theme.name)
     if (!theme) {
       ctx.addIssue({
@@ -169,12 +231,12 @@ export function createIntakeSchema(catalog: Catalog) {
       }
     })
 
-    if (s.domain.situation !== 'none' && !s.domain.name) {
+    if (s.domain && s.domain.situation !== 'none' && !s.domain.name) {
       ctx.addIssue({
         code: 'custom',
         path: ['domain', 'name'],
         message: 'A domain name is required unless the client has no domain yet.',
       })
     }
-  })
+  }
 }

@@ -1,6 +1,7 @@
 import { manifest as realvista } from '@makleri/theme-realvista/manifest'
 
 import { catalogEntry, type Catalog } from './catalog.js'
+import { createProvisioningSchema } from './schema.js'
 
 /**
  * Every theme currently on sale.
@@ -13,3 +14,10 @@ import { catalogEntry, type Catalog } from './catalog.js'
  * selections does not pull theme packages in.
  */
 export const catalog: Catalog = [catalogEntry(realvista)]
+
+/**
+ * The strict schema `/create-website` and the CRM's provisioning-JSON
+ * endpoint check against: the selection plus `domain` and `plan`, valid for
+ * the themes on sale today.
+ */
+export const provisioningSchema = createProvisioningSchema(catalog)

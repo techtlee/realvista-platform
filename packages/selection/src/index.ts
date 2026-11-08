@@ -8,7 +8,9 @@ export {
 } from './catalog.js'
 export {
   BILLING_PERIODS,
+  buildProvisioningJson,
   createIntakeSchema,
+  createProvisioningSchema,
   DOMAIN_SITUATIONS,
   EMAIL_ON_DOMAIN,
   LOCALES,
@@ -16,6 +18,8 @@ export {
   REGISTRARS,
   selectionV1Schema,
   TONES,
+  type ProvisioningJson,
+  type QualificationFacts,
   type Selection,
   type SelectionV1,
   type SelectionV1Input,

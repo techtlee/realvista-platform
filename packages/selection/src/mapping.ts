@@ -40,7 +40,7 @@ const SECTION_MODULES = { services: 'services', blog: 'blog' } as const
  * | sections.home                                | pages.home.sections    |
  * | brand.name                                   | brand.name             |
  * | content.locale                               | locale                 |
- * | domain.name (once live)                      | domain                 |
+ * | domain.name (once live; absent → subdomain)  | domain                 |
  *
  * Never reaches the site: `content.tone` and `brand.tagline` seed CMS
  * content; `plan` and `source` are CRM-only; `modules.references` has no
@@ -54,8 +54,10 @@ export function toSiteConfigInput(selection: Selection, facts: ProvisioningFacts
   )
   const sections = selection.sections.home.filter((id) => !off.has(id))
 
+  // A selection straight from the storefront has no `domain` until the lead
+  // is qualified; the platform subdomain serves until then.
   const ownDomain =
-    facts.customDomainLive && selection.domain.situation !== 'none' && selection.domain.name
+    facts.customDomainLive && selection.domain && selection.domain.situation !== 'none' && selection.domain.name
       ? selection.domain.name
       : undefined
 

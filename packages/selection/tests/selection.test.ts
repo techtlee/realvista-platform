@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildProvisioningJson,
   catalogEntry,
   createIntakeRequestSchema,
   createIntakeSchema,
+  createProvisioningSchema,
   readStoredSelection,
   toSiteConfigInput,
   UnknownSelectionVersionError,
   type Catalog,
   type SelectionV1Input,
 } from '../src/index.js'
-import { catalog as registry } from '../src/registry.js'
+import { provisioningSchema, catalog as registry } from '../src/registry.js'
 
 const catalog: Catalog = [
   catalogEntry({
@@ -54,7 +56,7 @@ function issues(input: unknown) {
 describe('intake validation', () => {
   it('accepts the canonical example and normalises the domain', () => {
     const r = intake.parse(valid())
-    expect(r.domain.name).toBe('novakreality.cz')
+    expect(r.domain?.name).toBe('novakreality.cz')
   })
 
   it('rejects an unknown theme', () => {
@@ -87,15 +89,15 @@ describe('intake validation', () => {
 
   it('requires a domain name unless the client has none', () => {
     const s = valid()
-    delete s.domain.name
+    delete s.domain!.name
     expect(issues(s)).toEqual(['domain.name'])
-    s.domain.situation = 'none'
+    s.domain!.situation = 'none'
     expect(issues(s)).toEqual([])
   })
 
   it('rejects a domain with a protocol or path', () => {
     const s = valid()
-    s.domain.name = 'https://novakreality.cz/'
+    s.domain!.name = 'https://novakreality.cz/'
     expect(issues(s)).toEqual(['domain.name'])
   })
 })
@@ -197,5 +199,134 @@ describe('intake request', () => {
     const b = body()
     b.selection.theme.variant = 'purple'
     expect(request.safeParse(b).success).toBe(false)
+  })
+})
+
+/** What the storefront sends: no `domain`, no `plan` — the page does not ask. */
+function fromStorefront(): SelectionV1Input {
+  const { domain: _domain, plan: _plan, ...rest } = valid()
+  return rest
+}
+
+const qualified = {
+  domain: { situation: 'have-access', name: 'NovakReality.cz', registrar: 'wedos', emailOnDomain: 'yes' },
+  plan: { tier: 'standard', billingPeriod: 'yearly' },
+}
+
+describe('storefront selection without domain and plan', () => {
+  it('passes intake', () => {
+    expect(issues(fromStorefront())).toEqual([])
+  })
+
+  it('passes the intake request schema', () => {
+    const r = createIntakeRequestSchema(catalog).safeParse({
+      contact: { name: 'Jan Novák', email: 'jan@novakreality.cz' },
+      consent: { given: true, text: 'Souhlasím se zpracováním osobních údajů za účelem nabídky.' },
+      selection: fromStorefront(),
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('reads back from storage', () => {
+    const s = readStoredSelection(fromStorefront())
+    expect(s.domain).toBeUndefined()
+    expect(s.plan).toBeUndefined()
+  })
+
+  it('still validates a domain when one is sent', () => {
+    expect(issues({ ...fromStorefront(), domain: { situation: 'have-access', emailOnDomain: 'yes' } })).toEqual([
+      'domain.name',
+    ])
+  })
+
+  it('maps to a site config on the platform subdomain', () => {
+    const cfg = toSiteConfigInput(readStoredSelection(fromStorefront()), {
+      siteId: 'novak-reality',
+      cms: { url: 'https://cms.example.cz', tenantId: 7 },
+      platformSubdomain: 'novak-reality.makleri.cz',
+      customDomainLive: true,
+    })
+    expect(cfg.domain).toBe('novak-reality.makleri.cz')
+  })
+})
+
+describe('provisioning schema', () => {
+  const provisioning = createProvisioningSchema(catalog)
+  const paths = (input: unknown) => {
+    const r = provisioning.safeParse(input)
+    return r.success ? [] : r.error.issues.map((i) => i.path.join('.'))
+  }
+
+  it('requires domain and plan', () => {
+    expect(paths(fromStorefront())).toEqual(['domain', 'plan'])
+  })
+
+  it('accepts the selection once qualification is added', () => {
+    const json = buildProvisioningJson(fromStorefront(), qualified)
+    const r = provisioning.parse(json)
+    expect(r.domain.name).toBe('novakreality.cz')
+    expect(r.plan.tier).toBe('standard')
+  })
+
+  it('applies the intake rules too', () => {
+    const ok = buildProvisioningJson(fromStorefront(), qualified)
+    expect(paths({ ...ok, theme: { name: 'nope', variant: 'indigo' } })).toEqual(['theme.name'])
+    expect(paths({ ...ok, theme: { name: 'realvista', variant: 'purple' } })).toEqual(['theme.variant'])
+    expect(paths({ ...ok, sections: { home: ['hero', 'carousel', 'hero'] } })).toEqual([
+      'sections.home.1',
+      'sections.home.2',
+    ])
+    expect(paths({ ...ok, status: 'approved' })).toHaveLength(1)
+    expect(paths({ ...ok, schemaVersion: 2 })).toEqual(['schemaVersion'])
+  })
+
+  it('requires a domain name unless the client has none', () => {
+    const json = buildProvisioningJson(fromStorefront(), {
+      ...qualified,
+      domain: { situation: 'have-no-access', name: null, registrar: null, emailOnDomain: 'unknown' },
+    })
+    expect(paths(json)).toEqual(['domain.name'])
+    expect(
+      paths(
+        buildProvisioningJson(fromStorefront(), {
+          ...qualified,
+          domain: { situation: 'none', name: '', registrar: null, emailOnDomain: 'no' },
+        }),
+      ),
+    ).toEqual([])
+  })
+
+  it('reports unfilled qualification fields as missing, not invalid', () => {
+    const json = buildProvisioningJson(fromStorefront(), {
+      domain: { situation: null, name: null, registrar: null, emailOnDomain: null },
+      plan: { tier: null, billingPeriod: 'monthly' },
+    })
+    const r = provisioning.safeParse(json)
+    expect(r.success).toBe(false)
+    const missing = r.error!.issues.map((i) => i.path.join('.'))
+    expect(missing).toEqual(['domain.situation', 'domain.emailOnDomain', 'plan.tier'])
+    expect(r.error!.issues.every((i) => i.code === 'invalid_value' || i.code === 'invalid_type')).toBe(true)
+  })
+
+  it('lets the lead’s values win over what the selection carried', () => {
+    const json = buildProvisioningJson(valid(), {
+      ...qualified,
+      plan: { tier: 'premium', billingPeriod: 'monthly' },
+    })
+    expect(json.plan).toEqual({ tier: 'premium', billingPeriod: 'monthly' })
+  })
+
+  it('drops keys the stored selection has but v1 does not, instead of failing strict', () => {
+    const json = buildProvisioningJson({ ...fromStorefront(), legacyKey: 1 }, qualified)
+    expect(json).not.toHaveProperty('legacyKey')
+    expect(paths(json)).toEqual([])
+  })
+
+  it('refuses a stored selection that is not a v1 selection', () => {
+    expect(() => buildProvisioningJson({ schemaVersion: 1 }, qualified)).toThrow()
+  })
+
+  it('is bound to the registry for the CRM and /create-website', () => {
+    expect(provisioningSchema.safeParse(buildProvisioningJson(fromStorefront(), qualified)).success).toBe(true)
   })
 })
