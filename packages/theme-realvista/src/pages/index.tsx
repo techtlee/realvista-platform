@@ -117,7 +117,7 @@ export function RealvistaHome({
               <h2 className="text-[30px] font-medium leading-[36px] text-brand">
                 Nabídka našich nemovitostí
               </h2>
-              <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
+              <p className="rv-track text-[16px] leading-[20px] text-brand">
                 Vyberte si svůj nový domov.
               </p>
             </div>
@@ -127,7 +127,8 @@ export function RealvistaHome({
           </div>
 
           {regions.length > 0 ? (
-            <div className="-mx-5 mt-[50px] flex gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            // The row scrolls sideways and fades out over its last 52px, as drawn.
+            <div className="-mx-5 mt-[30px] flex gap-[10px] overflow-x-auto px-5 [mask-image:linear-gradient(to_right,#000_calc(100%-52px),transparent)] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
               {regions.map((r) => (
                 <RegionChip
                   key={r.value}

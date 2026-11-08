@@ -119,7 +119,12 @@ export function SpecPill({ children }: { children: ReactNode }) {
   )
 }
 
-/** 420-wide listing card: 235px image, white info block, soft shadow. */
+/**
+ * 420-wide listing card: 235px image, 100px white info block, soft shadow.
+ *
+ * Corners are 5px, split between the photo (top) and the info block (bottom)
+ * so the shadow stays on the info block alone, as drawn.
+ */
 export function PropertyCard({ property }: { property: Property }) {
   const cover = property.gallery?.[0]?.image
   const src = imageUrl(cover, 'card')
@@ -130,7 +135,7 @@ export function PropertyCard({ property }: { property: Property }) {
 
   return (
     <a href={`/nemovitosti/${property.slug}`} className="group block">
-      <div className="relative h-[235px] overflow-hidden bg-accent">
+      <div className="relative h-[235px] overflow-hidden rounded-t-btn bg-accent">
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -141,8 +146,9 @@ export function PropertyCard({ property }: { property: Property }) {
           />
         ) : null}
 
+        {/* 44px frosted tile, 10px in from the corner, hairline white edge. */}
         {photoCount > 1 ? (
-          <span className="absolute bottom-3 right-3 inline-flex h-11 w-11 items-center justify-center rounded-btn bg-white/20 text-[10px] font-bold leading-[20px] text-brand backdrop-blur-sm">
+          <span className="rv-track absolute bottom-[10px] right-[10px] inline-flex h-11 w-11 items-center justify-center rounded-btn border border-white/60 bg-white/20 text-[10px] font-bold leading-[20px] text-brand backdrop-blur-sm">
             +{photoCount - 1}
           </span>
         ) : null}
@@ -154,7 +160,8 @@ export function PropertyCard({ property }: { property: Property }) {
         ) : null}
       </div>
 
-      <div className="flex min-h-[100px] items-start justify-between gap-4 bg-card px-[30px] py-[31px] shadow-card">
+      {/* 20 + 20 title + 11 + 20 price + 29 = the 100px block in the design. */}
+      <div className="flex min-h-[100px] items-start justify-between gap-4 rounded-b-btn bg-card px-[30px] pb-[29px] pt-[20px] shadow-card">
         <div>
           <p className="text-[16px] font-bold leading-[20px] text-brand">{cardTitle(property)}</p>
           <p className="rv-track mt-[11px] text-[16px] leading-[20px] text-brand">{formatPrice(property)}</p>
@@ -177,11 +184,11 @@ export function MorePropertiesCard({ count, href }: { count: number; href: strin
   return (
     <div className="rv-promo flex min-h-[335px] flex-col items-center justify-center rounded-btn p-8 text-center shadow-card">
       <p className="text-[16px] font-bold leading-[20px] text-white">Dalších</p>
-      <p className="text-[60px] font-medium leading-[67px] text-white">{count}+</p>
-      <p className="mt-2 max-w-[224px] text-[16px] font-bold leading-[20px] text-white">
+      <p className="mt-[10px] text-[60px] font-medium leading-[67px] text-white">{count}+</p>
+      <p className="mt-[10px] max-w-[224px] text-[16px] font-bold leading-[20px] text-white">
         Nemovitostí na vás čeká v naší nabídce
       </p>
-      <div className="mt-8">
+      <div className="mt-[40px]">
         <GhostButton href={href}>Zobrazit více</GhostButton>
       </div>
     </div>
