@@ -130,6 +130,27 @@ describe('exec registration', () => {
     expect(() => exec.assertAllowed(['psql', 'postgres://localhost:5432/backend_svoboda_reality_dev'])).toThrow(/secret value/)
   })
 
+  it('file-location env values (SITE_KEY_OUT, PROVISIONING_REQUEST, …) are not registered, so slug paths stay usable', async () => {
+    const r = new Redactor()
+    const exec = new NodeExec({ redactor: r })
+    const dir = tmp()
+    const keyOut = '/x/clients/svoboda-reality/logs/cw-20261108T120301Z-7f3a/.site-key-123.tmp'
+    const env = {
+      SITE_KEY_OUT: keyOut,
+      PROVISIONING_REQUEST: '/x/clients/svoboda-reality/provisioning-request.json',
+      STARTER_COPY_JSON: '/x/clients/svoboda-reality/starter-copy.json',
+      SOME_KEY_FILE: '/x/clients/svoboda-reality/k.json',
+      CMS_API_KEY: 'site-key-value-0123456789',
+    }
+    const res = await exec.run(['node', '-e', 'console.log(process.env.SITE_KEY_OUT, process.env.PROVISIONING_REQUEST, process.env.CMS_API_KEY)'], { cwd: dir, env })
+    expect(res.stdout.trim()).toBe(`${keyOut} /x/clients/svoboda-reality/provisioning-request.json ${REDACTED}`)
+    expect(r.known()).toEqual(['site-key-value-0123456789'])
+    expect(() => exec.assertAllowed(['cat', keyOut])).not.toThrow()
+    expect(classifyKey('SITE_KEY_OUT')).toBe('public')
+    expect(classifyKey('PROVISIONING_REQUEST')).toBe('public')
+    expect(classifyKey('CMS_API_KEY')).toBe('secret')
+  })
+
   it('secretEnv values are always treated as secrets', async () => {
     const r = new Redactor()
     const exec = new NodeExec({ redactor: r })

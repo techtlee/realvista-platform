@@ -68,13 +68,29 @@ export const NON_SECRET_KEYS: ReadonlySet<string> = new Set([
   'CRM_ADMIN_EMAIL',
   'CRM_STAFF_EMAIL',
   'NEXT_TELEMETRY_DISABLED',
+  'CI',
+  // file locations handed to cms scripts (values are paths under clients/<slug>/)
+  'PROVISIONING_REQUEST',
+  'PROVISIONING_JSON',
+  'STARTER_COPY_JSON',
+  'SITE_KEY_OUT',
+  'PROVISIONER_KEY_OUT',
 ])
 
 export type KeyClass = 'secret' | 'public' | 'unknown'
 
+/**
+ * Keys whose value is a LOCATION, not a secret: `SITE_KEY_OUT` names the
+ * 0600 file the key is written to, `PROVISIONING_REQUEST` a JSON file. Their
+ * values are paths under clients/<slug>/; registering them would redact the
+ * slug's paths and make the exec guard refuse them.
+ */
+export const PATH_KEY_RE = /_(OUT|FILE|PATH|DIR)$/
+
 export function classifyKey(key: string): KeyClass {
   if (SECRET_KEYS.has(key)) return 'secret'
   if (NON_SECRET_KEYS.has(key)) return 'public'
+  if (PATH_KEY_RE.test(key)) return 'public'
   if (SECRET_KEY_RE.test(key)) return 'secret'
   return 'unknown'
 }
