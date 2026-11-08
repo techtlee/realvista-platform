@@ -127,11 +127,18 @@ export function gitIdentityEnv(): Record<string, string> {
   return env
 }
 
-const NAMES_TO_IGNORE = ['.env', '.env.local', '.admin-credentials.local']
+/** Secret files each repo is meant to hold; any other secret-named file found on disk is checked too. */
+const SECRET_NAMES = ['.env', '.env.local', '.admin-credentials.local', '.env.production.local']
+function expectedSecretNames(ctx: Ctx, dir: string): string[] {
+  if (dir === ctx.paths.backend) return ['.env', '.admin-credentials.local']
+  if (dir === ctx.paths.site) return ['.env.local']
+  return []
+}
 
 export async function assertSecretsIgnored(ctx: Ctx, dir: string): Promise<void> {
   if (!isGitRepo(dir)) return
-  for (const name of NAMES_TO_IGNORE) {
+  const names = new Set([...expectedSecretNames(ctx, dir), ...SECRET_NAMES.filter((n) => existsSync(join(dir, n)))])
+  for (const name of names) {
     const r = await ctx.exec.run(['git', 'check-ignore', '-q', '--no-index', name], { cwd: dir, allowFailure: true })
     if (r.code !== 0) {
       throw new CwError('PRECONDITION', `${name} is not git-ignored in ${dir}; refusing to commit`, {

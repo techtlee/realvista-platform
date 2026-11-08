@@ -51,8 +51,9 @@ const PLZEN_RE = /(?<!\p{L})Plz(eň|ni|ně|ní|eňsk\p{L}*)(?!\p{L})/u
 
 /**
  * Rules the template schema cannot know because they depend on the request:
- * the client's city (client #1's Plzeň must never leak into another client)
- * and the brand being present.
+ * the tone must equal the request's (the seed refuses otherwise), the
+ * client's city (client #1's Plzeň must never leak into another client) and
+ * the brand being present.
  */
 export function requestRules(copy: unknown, request: ProvisioningRequest): CopyIssue[] {
   const issues: CopyIssue[] = []
@@ -68,6 +69,10 @@ export function requestRules(copy: unknown, request: ProvisioningRequest): CopyI
     for (const s of all) {
       if (PLZEN_RE.test(s.value)) issues.push({ path: s.path, message: `Mentions Plzeň, but the client's city is ${city || 'not Plzeň'}. Use {city}.` })
     }
+  }
+  const tone = (copy as { tone?: unknown } | null)?.tone
+  if (tone !== request.provisioning.content.tone) {
+    issues.push({ path: 'tone', message: `tone is "${String(tone)}" but the request's content.tone is "${request.provisioning.content.tone}"; the seed refuses a mismatch.` })
   }
   const brand = request.provisioning.brand.name
   if (!all.some((s) => s.value.includes('{brand}') || s.value.includes(brand))) {

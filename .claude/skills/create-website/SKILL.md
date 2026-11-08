@@ -169,10 +169,12 @@ Exit codes and what to do: `references/errors.md`. In short:
 `clients/<slug>/starter-copy.json` starts as the tone default (`cw copy init`).
 Personalise it for this realtor when Josef asks, or when the brand or city
 make the default read oddly. Rules are in `references/czech-copy.md`; the
-essentials: Czech, vykání in every tone, no invented facts (years, counts,
-ratings, awards, addresses), `[DOPLNIT]` where a fact is missing, legal texts
-stay `[NÁVRH – před spuštěním nahradit]`, and the city is the client's, never
-Plzeň by default. Then:
+essentials: Czech, vykání in every tone, `tone` stays the request's
+`content.tone`, no invented facts and no digits outside blog posts and legal
+(years, counts, ratings, phone numbers, opening hours: write `[DOPLNIT]`, and
+use the `{phone}`/`{email}`/`{city}`/`{brand}` tokens for request facts),
+legal texts stay `[NÁVRH – před spuštěním nahradit]`, and the city is the
+client's, never Plzeň by default. Then:
 
 ```sh
 $CW copy validate <slug> --json && $CW run <slug> --json

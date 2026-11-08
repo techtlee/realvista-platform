@@ -80,7 +80,12 @@ describe('starter copy', () => {
     expect(issues.map((i) => i.message).join('\n')).toMatch(/Plzeň/)
     expect(issues.map((i) => i.message).join('\n')).toMatch(/brand/)
     const plzen = { ...REQUEST, company: { city: 'Plzeň' } }
-    expect(requestRules({ hero: { headline: 'Svoboda Reality v Plzni' } }, plzen)).toEqual([])
+    expect(requestRules({ tone: 'friendly', hero: { headline: 'Svoboda Reality v Plzni' } }, plzen)).toEqual([])
+  })
+
+  it("the copy's tone must equal the request's content.tone", () => {
+    const issues = requestRules({ tone: 'formal', hero: { headline: '{brand}' } }, REQUEST)
+    expect(issues).toEqual([expect.objectContaining({ path: 'tone' })])
   })
 })
 
