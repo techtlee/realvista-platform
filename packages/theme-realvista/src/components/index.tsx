@@ -35,9 +35,15 @@ export { MortgageCalculator } from './MortgageCalculator.js'
  * same thing to a buyer whichever layout their realtor bought.
  */
 
-/** 1440 canvas − 2×70 gutters = 1300. */
+/**
+ * 1440 canvas − 2×70 gutters = 1300 of content.
+ *
+ * Expressed as 1364 = 1300 + the 32px gutter on each side, so the gutter never
+ * switches off. It used to be `max-w-[1300px] xl:px-0`, which put every line
+ * of text flush against the window edge on a 1280–1363px laptop screen.
+ */
 export function Container({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-[1300px] px-5 sm:px-8 xl:px-0 ${className}`}>{children}</div>
+  return <div className={`mx-auto w-full max-w-[1364px] px-5 sm:px-8 ${className}`}>{children}</div>
 }
 
 /** 200×50, 5px radius, brand fill. */
@@ -224,7 +230,7 @@ export function Header({
         <a href="/" className={`rv-track text-[16px] leading-[20px] ${ink}`}>
           {settings?.siteName ?? 'Realvista'}
         </a>
-        <nav aria-label="Hlavní navigace" className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Hlavní navigace" className="hidden items-center gap-10 md:flex">
           {nav.map((n) => (
             <a key={n.href} href={n.href} className={`rv-track text-[16px] leading-[20px] ${ink} hover:opacity-70`}>
               {n.label}
