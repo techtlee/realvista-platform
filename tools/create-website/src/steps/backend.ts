@@ -85,7 +85,8 @@ export const backendCopy: Step = {
   phase: 'B',
   crmLogName: 'backend-repo-local',
   outward: false,
-  dependsOn: ['record-repo'],
+  // its input is the cms SHA, which preflight pins
+  dependsOn: ['preflight'],
   fingerprint: (ctx) => fingerprintOf({ cms: ctx.state.get().templates.cms?.commit }),
   probe: (ctx) => probeTemplateCopy(ctx, ctx.paths.backend, `cms@${cmsCommit(ctx)}`, 'backend'),
   recover: (ctx) => recoverTmp(ctx, 'backend'),
