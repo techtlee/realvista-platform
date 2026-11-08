@@ -541,13 +541,16 @@ export function ServicesSection({ services }: { services: Service[] }) {
   )
 }
 
-/** Blog card: 235px cover, white info block, matching the listing card. */
+/**
+ * Blog card: 235px cover over a 180px info block. Tighter than the listing
+ * card: 20px inset, and the date sits directly under the title.
+ */
 export function PostCard({ post }: { post: Post }) {
   const src = imageUrl(post.coverImage, 'card')
 
   return (
     <a href={`/blog/${post.slug}`} className="group block">
-      <div className="h-[235px] overflow-hidden bg-accent">
+      <div className="h-[235px] overflow-hidden rounded-t-btn bg-accent">
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -558,10 +561,10 @@ export function PostCard({ post }: { post: Post }) {
           />
         ) : null}
       </div>
-      <div className="min-h-[180px] bg-card p-[30px] shadow-card">
+      <div className="min-h-[180px] rounded-b-btn bg-card p-5 pr-[23px] shadow-card">
         <p className="text-[16px] font-bold leading-[20px] text-brand">{post.title}</p>
         {formatDate(post.publishedAt) ? (
-          <p className="rv-track mt-5 text-[16px] leading-[20px] text-brand opacity-40">
+          <p className="rv-track text-[16px] leading-[20px] text-brand opacity-40">
             {formatDate(post.publishedAt)}
           </p>
         ) : null}

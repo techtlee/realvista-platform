@@ -217,12 +217,13 @@ export function RealvistaHome({
     // Off means no /blog route exists on the client site, so no teaser either.
     blog:
       site.features.blog && posts.length > 0 ? (
-        <section key="blog" className="pb-[150px] pt-[150px]">
+        // 192px under the contact form, 250px (50 + the footer's 200) above the footer.
+        <section key="blog" className="pb-[50px] pt-[150px] lg:pt-[192px]">
           <Container>
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div>
                 <h2 className="text-[30px] font-medium leading-[36px] text-brand">Vědomosti a praxe</h2>
-                <p className="rv-track mt-4 max-w-[520px] text-[16px] leading-[20px] text-brand">
+                <p className="rv-track max-w-[520px] text-[16px] leading-[20px] text-brand">
                   Pravidelně sdílím své zkušenosti, hloubkové analýzy a praktické tipy.
                 </p>
               </div>
@@ -231,7 +232,7 @@ export function RealvistaHome({
               </SolidButton>
             </div>
 
-            <div className="mt-[60px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {posts.slice(0, 3).map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
@@ -562,7 +563,7 @@ export function RealvistaBlogIndex({ site, settings, posts }: BlogIndexPageProps
         title="Vědomosti a praxe"
         lead="Zkušenosti z trhu, hloubkové analýzy a praktické tipy k prodeji i pronájmu."
       />
-      <Container className="pb-[150px] pt-[50px]">
+      <Container className="pt-[50px]">
         {posts.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((post) => (
