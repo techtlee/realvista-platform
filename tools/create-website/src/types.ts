@@ -406,6 +406,12 @@ export interface ExecOptions {
   cwd: string
   /** merged over a minimal inherited env; secrets go here, never in argv */
   env?: Record<string, string>
+  /**
+   * env entries whose values are always treated as secrets (registered for
+   * redaction and the argv guard). Keys in `env` are registered only when
+   * their name classifies as secret (see secrets.ts classifyKey).
+   */
+  secretEnv?: Record<string, string>
   /** replaces the inherited env entirely when true */
   cleanEnv?: boolean
   stdin?: string
