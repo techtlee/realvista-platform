@@ -182,10 +182,12 @@ export function RealvistaHome({
             </p>
           </div>
           <div className="relative">
-            {imageUrl(agent.photo, 'card') ? (
+            {/* 'full', not 'card': the card size is a 768×512 landscape crop,
+                which cut the portrait's head and shoulders and blurred it. */}
+            {imageUrl(agent.photo, 'full') ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={imageUrl(agent.photo, 'card')}
+                src={imageUrl(agent.photo, 'full')}
                 alt={agent.name}
                 className="mx-auto block h-[459px] w-full max-w-[420px] object-cover object-top lg:absolute lg:-bottom-[55px] lg:right-0 lg:w-[420px]"
               />
