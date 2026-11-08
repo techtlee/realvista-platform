@@ -72,6 +72,8 @@ export function RealvistaHome({
   const hero = settings?.hero
   const agent = settings?.agent
   const heroSrc = imageUrl(hero?.backgroundImage, 'hero')
+  // 'full', not 'hero': the hero size is a 1600×900 crop, and a cut-out must keep its shape.
+  const portraitSrc = imageUrl(hero?.portrait, 'full')
   const regions = regionCounts(listings)
   const grid = featured.length > 0 ? featured : listings.slice(0, 8)
   const remaining = Math.max(totalListings - grid.length, 0)
@@ -94,7 +96,10 @@ export function RealvistaHome({
       // bleed under a wash (indigo, mono), or the right half of a gradient
       // band, as the cut-out portrait is drawn on crimson and clay. See
       // `.rv-hero` in theme.css.
-      <section key="hero" className="rv-hero relative isolate h-[700px] overflow-hidden">
+      <section
+        key="hero"
+        className={`rv-hero relative isolate h-[700px] overflow-hidden${portraitSrc ? ' rv-hero--portrait' : ''}`}
+      >
         {heroSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={heroSrc} alt="" className="rv-hero-photo absolute inset-y-0 h-full object-cover" />
@@ -102,6 +107,22 @@ export function RealvistaHome({
           <div className="rv-hero-empty absolute inset-0" />
         )}
         <div className="rv-hero-overlay absolute inset-0" />
+        {portraitSrc ? (
+          // The realtor is a separate layer, as Figma draws it: the background
+          // covers any width, while the portrait keeps its own size and sits on
+          // the hero's bottom edge in the right half of the container. Baked
+          // into one photo, a wide screen zoomed in and cut the face off.
+          <div className="pointer-events-none absolute inset-0">
+            <Container className="relative h-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={portraitSrc}
+                alt={agent?.name ?? ''}
+                className="rv-hero-portrait absolute bottom-0 right-0 h-[45%] w-auto max-w-none object-contain object-bottom sm:h-full sm:max-h-[700px] lg:right-[34px]"
+              />
+            </Container>
+          </div>
+        ) : null}
 
         {/* Top-anchored, not centred: the headline starts 188px down on the canvas. */}
         <Container className="relative pt-[120px] lg:pt-[188px]">

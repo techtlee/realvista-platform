@@ -141,6 +141,8 @@ export interface SiteSettings {
     ctaLabel?: string | null
     ctaHref?: string | null
     backgroundImage?: Media | null
+    /** Cut-out portrait (transparent PNG) layered over the background, as in Figma. */
+    portrait?: Media | null
   } | null
   about?: { heading?: string | null; body?: unknown; image?: Media | null } | null
   stats?: { value?: string | null; label?: string | null }[] | null

@@ -179,6 +179,10 @@ body {
   -webkit-mask-image: var(--rv-hero-photo-mask);
   mask-image: var(--rv-hero-photo-mask);
 }
+/* Crimson and clay draw the cut-out straight on the gradient band (Figma
+   39:3367, 39:4174): with a portrait layer the background photo stays off. */
+[data-variant='crimson'] .rv-hero--portrait .rv-hero-photo,
+[data-variant='clay'] .rv-hero--portrait .rv-hero-photo { display: none; }
 /* On a phone the right half is too narrow for a face; the photo widens under the text. */
 @media (max-width: 1023px) {
   .rv-hero-photo { right: 0; width: max(var(--rv-hero-photo-width), 75%); }

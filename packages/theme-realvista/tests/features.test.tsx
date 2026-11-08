@@ -165,3 +165,30 @@ describe('contact form', () => {
     expect(input).not.toContain('required')
   })
 })
+
+describe('hero portrait', () => {
+  const withPortrait = (portrait: unknown) =>
+    stripPreloads(renderToStaticMarkup(
+      <RealvistaHome
+        site={site({}, ['hero', 'featured'])}
+        settings={{ ...full.settings, hero: { ...full.settings.hero, portrait } } as typeof full.settings}
+        featured={[]}
+        listings={full.listings}
+        totalListings={full.listings.length}
+        services={full.services}
+        posts={full.posts}
+      />,
+    ))
+
+  it('layers a cut-out portrait over the background when one is set', () => {
+    const html = withPortrait({ id: 99, url: '/media/portret.png', alt: 'Portrét', width: 575, height: 700 })
+    expect(html).toContain('rv-hero--portrait')
+    expect(html).toMatch(/<img[^>]*src="\/media\/portret.png"[^>]*class="rv-hero-portrait/)
+  })
+
+  it('renders no portrait layer without one', () => {
+    const html = withPortrait(null)
+    expect(html).not.toContain('rv-hero-portrait')
+    expect(html).not.toContain('rv-hero--portrait')
+  })
+})
