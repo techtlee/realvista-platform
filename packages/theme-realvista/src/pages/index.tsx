@@ -30,10 +30,12 @@ import {
   GhostButton,
   Header,
   MorePropertiesCard,
+  MortgageCalculator,
   OutlineButton,
   PageHeading,
   PostCard,
   PropertyCard,
+  PropertyMap,
   RegionChip,
   RichText,
   ServicesSection,
@@ -88,8 +90,6 @@ export function RealvistaHome({
           <div className="absolute inset-0 bg-accent" />
         )}
         <div className="rv-hero-overlay absolute inset-0" />
-
-        <Header settings={settings} overlay />
 
         <Container className="relative flex h-full flex-col justify-center">
           <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-hero-ink sm:text-[60px] sm:leading-[67px]">
@@ -197,8 +197,9 @@ export function RealvistaHome({
 
     contact: <ContactSection key="contact" settings={settings} />,
 
+    // Off means no /blog route exists on the client site, so no teaser either.
     blog:
-      posts.length > 0 ? (
+      site.features.blog && posts.length > 0 ? (
         <section key="blog" className="pb-[150px] pt-[150px]">
           <Container>
             <div className="flex flex-wrap items-start justify-between gap-6">
@@ -223,22 +224,27 @@ export function RealvistaHome({
       ) : null,
   }
 
+  // The header is rendered once, first, whatever the section order. It used to
+  // live inside the hero, so moving the hero down moved the nav with it and a
+  // second header was appended after the last section. It only takes the
+  // transparent overlay look when the hero is directly underneath it.
+  const heroFirst = order[0] === 'hero' && sections.hero != null
+
   return (
     <>
+      <Header settings={settings} site={site} overlay={heroFirst} />
       {order.map((id) => sections[id] ?? null)}
-      {/* The hero carries the header; any other opening section needs its own. */}
-      {order[0] !== 'hero' ? <Header settings={settings} /> : null}
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
 
 // ── listing index ────────────────────────────────────────────────────────────
 
-export function RealvistaListingIndex({ settings, listings, totalListings }: ListingIndexPageProps) {
+export function RealvistaListingIndex({ site, settings, listings, totalListings }: ListingIndexPageProps) {
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
       <Container className="py-[90px]">
         <h1 className="text-[30px] font-medium leading-[36px] text-brand">Nabídka nemovitostí</h1>
         <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
@@ -258,7 +264,7 @@ export function RealvistaListingIndex({ settings, listings, totalListings }: Lis
         )}
       </Container>
       <ContactSection settings={settings} />
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
@@ -273,11 +279,20 @@ function listingCount(n: number): string {
 
 // ── property detail ──────────────────────────────────────────────────────────
 
-export function RealvistaPropertyDetail({ settings, property, similar }: PropertyDetailPageProps) {
+export function RealvistaPropertyDetail({ site, settings, property, similar }: PropertyDetailPageProps) {
   const gallery = property.gallery ?? []
   const [main, ...rest] = gallery
   const agent = settings?.agent
   const perM2 = pricePerSquareMetre(property)
+  // Sales with a stated price only: a payment derived from a monthly rent, or
+  // from "Cena na vyžádání", would be a number with no meaning.
+  const calculatorPrice =
+    site.features.mortgageCalculator &&
+    property.transactionType !== 'pronajem' &&
+    !property.price?.onRequest &&
+    property.price?.amount
+      ? property.price.amount
+      : undefined
 
   const params: [string, string | undefined][] = [
     ['Dispozice', dispositionLabel(property.disposition)],
@@ -312,7 +327,7 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
 
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
 
       <Container className="pt-[40px]">
         <nav className="flex flex-wrap items-center gap-2 text-[14px] leading-[18px] text-muted">
@@ -420,50 +435,53 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
           ) : null}
         </div>
 
-        {agent ? (
-          <aside className="h-fit rounded-btn bg-card p-[40px] shadow-card">
-            <p className="text-center text-[30px] font-medium leading-[39px] text-brand">
-              Máte zájem o prohlídku?
-            </p>
+        <div className="flex flex-col gap-[30px]">
+          {agent ? (
+            <aside className="h-fit rounded-btn bg-card p-[40px] shadow-card">
+              <p className="text-center text-[30px] font-medium leading-[39px] text-brand">
+                Máte zájem o prohlídku?
+              </p>
 
-            <div className="mt-[18px] flex items-center gap-[30px]">
-              {imageUrl(agent.photo, 'thumbnail') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl(agent.photo, 'thumbnail')}
-                  alt={agent.name}
-                  className="h-20 w-20 shrink-0 rounded-btn object-cover"
-                />
-              ) : null}
-              <div>
-                <p className="text-[16px] font-bold leading-[21px] text-brand">{agent.name}</p>
-                {agent.jobTitle ? (
-                  <p className="mt-1 text-[16px] leading-[21px] text-muted">{agent.jobTitle}</p>
+              <div className="mt-[18px] flex items-center gap-[30px]">
+                {imageUrl(agent.photo, 'thumbnail') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imageUrl(agent.photo, 'thumbnail')}
+                    alt={agent.name}
+                    className="h-20 w-20 shrink-0 rounded-btn object-cover"
+                  />
+                ) : null}
+                <div>
+                  <p className="text-[16px] font-bold leading-[21px] text-brand">{agent.name}</p>
+                  {agent.jobTitle ? (
+                    <p className="mt-1 text-[16px] leading-[21px] text-muted">{agent.jobTitle}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-[40px] flex flex-wrap gap-3">
+                <SolidButton href="#kontakt" className="flex-1">
+                  Domluvit prohlídku
+                </SolidButton>
+                {agent.phone ? (
+                  <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
+                    Zavolat makléři
+                  </OutlineButton>
                 ) : null}
               </div>
-            </div>
 
-            <div className="mt-[40px] flex flex-wrap gap-3">
-              <SolidButton href="#kontakt" className="flex-1">
-                Domluvit prohlídku
-              </SolidButton>
-              {agent.phone ? (
-                <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
-                  Zavolat makléři
-                </OutlineButton>
-              ) : null}
-            </div>
-
-            <div className="mt-[60px] flex flex-wrap gap-x-12 gap-y-3">
-              {agent.phone ? (
-                <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.phone}</p>
-              ) : null}
-              {agent.email ? (
-                <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.email}</p>
-              ) : null}
-            </div>
-          </aside>
-        ) : null}
+              <div className="mt-[60px] flex flex-wrap gap-x-12 gap-y-3">
+                {agent.phone ? (
+                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.phone}</p>
+                ) : null}
+                {agent.email ? (
+                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.email}</p>
+                ) : null}
+              </div>
+            </aside>
+          ) : null}
+          {calculatorPrice ? <MortgageCalculator price={calculatorPrice} /> : null}
+        </div>
       </Container>
 
       {property.address?.city ? (
@@ -475,6 +493,7 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
               ? '. Přesná adresa je k dispozici na vyžádání.'
               : '.'}
           </p>
+          {site.features.listingMap ? <PropertyMap property={property} className="mt-[30px]" /> : null}
         </Container>
       ) : null}
 
@@ -497,17 +516,17 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
         <ContactSection settings={settings} propertyId={property.id} />
       </div>
 
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
 
 // ── blog ─────────────────────────────────────────────────────────────────────
 
-export function RealvistaBlogIndex({ settings, posts }: BlogIndexPageProps) {
+export function RealvistaBlogIndex({ site, settings, posts }: BlogIndexPageProps) {
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
       <PageHeading
         title="Vědomosti a praxe"
         lead="Zkušenosti z trhu, hloubkové analýzy a praktické tipy k prodeji i pronájmu."
@@ -525,18 +544,18 @@ export function RealvistaBlogIndex({ settings, posts }: BlogIndexPageProps) {
           </p>
         )}
       </Container>
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
 
-export function RealvistaPostDetail({ settings, post, recent }: PostDetailPageProps) {
+export function RealvistaPostDetail({ site, settings, post, recent }: PostDetailPageProps) {
   const cover = imageUrl(post.coverImage, 'hero')
   const date = formatDate(post.publishedAt)
 
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
 
       <Container className="pt-[40px]">
         <nav className="flex flex-wrap items-center gap-2 text-[14px] leading-[18px] text-muted">
@@ -592,7 +611,7 @@ export function RealvistaPostDetail({ settings, post, recent }: PostDetailPagePr
         <ContactSection settings={settings} />
       </div>
 
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }

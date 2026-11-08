@@ -1,3 +1,4 @@
+import type { SiteConfig } from '@makleri/core/config'
 import type { Post, Property, Service, SiteSettings } from '@makleri/core/content'
 import {
   cardTitle,
@@ -11,6 +12,11 @@ import {
 import type { ReactNode } from 'react'
 
 import { ServiceGlyph } from '../icons.js'
+
+export { PropertyMap, mapView, osmEmbedUrl } from './PropertyMap.js'
+// The component only: anything else exported from a 'use client' module becomes
+// a client reference on the server and cannot be called there.
+export { MortgageCalculator } from './MortgageCalculator.js'
 
 /**
  * REALVISTA building blocks, matching the Figma CSS export.
@@ -176,21 +182,41 @@ export function MorePropertiesCard({ count, href }: { count: number; href: strin
   )
 }
 
-const NAV = [
-  { href: '/nemovitosti', label: 'Nemovitosti' },
-  { href: '/#kontakt', label: 'Kontakt' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/#o-makleri', label: 'O Makléři' },
-]
+/**
+ * Header links, honouring the site's modules.
+ *
+ * `/blog` is linked only when `features.blog` is on: the client repo 404s the
+ * blog routes when it is off, and the configurator sells the switch.
+ */
+export function navItems(site: SiteConfig): { href: string; label: string }[] {
+  return [
+    { href: '/nemovitosti', label: 'Nemovitosti' },
+    { href: '/#kontakt', label: 'Kontakt' },
+    ...(site.features.blog ? [{ href: '/blog', label: 'Blog' }] : []),
+    { href: '/#o-makleri', label: 'O Makléři' },
+  ]
+}
 
 /**
  * Nav sits over the hero on the homepage and on the page background elsewhere.
  * `overlay` keeps it transparent and absolutely placed, matching the export.
+ *
+ * Rendered once per page, first. `site` is required so the links can follow
+ * the modules the realtor bought.
  */
-export function Header({ settings, overlay = false }: { settings: SiteSettings | null; overlay?: boolean }) {
+export function Header({
+  settings,
+  site,
+  overlay = false,
+}: {
+  settings: SiteSettings | null
+  site: SiteConfig
+  overlay?: boolean
+}) {
   // Over the hero the nav takes the hero's ink (white on crimson and clay,
   // brand indigo on indigo); elsewhere it always sits on the page background.
   const ink = overlay ? 'text-hero-ink' : 'text-brand'
+  const nav = navItems(site)
 
   return (
     <header className={overlay ? 'absolute inset-x-0 top-0 z-40' : 'relative z-40'}>
@@ -198,13 +224,41 @@ export function Header({ settings, overlay = false }: { settings: SiteSettings |
         <a href="/" className={`rv-track text-[16px] leading-[20px] ${ink}`}>
           {settings?.siteName ?? 'Realvista'}
         </a>
-        <nav className="hidden items-center gap-8 md:flex">
-          {NAV.map((n) => (
+        <nav aria-label="Hlavní navigace" className="hidden items-center gap-8 md:flex">
+          {nav.map((n) => (
             <a key={n.href} href={n.href} className={`rv-track text-[16px] leading-[20px] ${ink} hover:opacity-70`}>
               {n.label}
             </a>
           ))}
         </nav>
+
+        {/*
+          Below md the nav above is hidden, and a phone visitor used to get
+          nothing in its place. <details> opens and closes without JavaScript,
+          so the header stays a Server Component and works before hydration.
+        */}
+        <details className="group md:hidden">
+          <summary
+            aria-label="Menu"
+            className={`grid h-10 w-10 cursor-pointer list-none place-items-center ${ink} [&::-webkit-details-marker]:hidden`}
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+              <path className="group-open:hidden" d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" />
+              <path className="hidden group-open:block" d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </summary>
+          <nav aria-label="Menu" className="absolute inset-x-0 top-[60px] bg-card shadow-card">
+            {nav.map((n) => (
+              <a
+                key={n.href}
+                href={n.href}
+                className="rv-track block border-b border-accent px-5 py-4 text-[16px] leading-[20px] text-brand sm:px-8"
+              >
+                {n.label}
+              </a>
+            ))}
+          </nav>
+        </details>
       </Container>
     </header>
   )
@@ -217,7 +271,7 @@ export function ContactSection({
   propertyId,
 }: {
   settings: SiteSettings | null
-  /** Where the form posts. The client repo owns the route; see manifest.routes. */
+  /** Where the form posts. The client repo owns the route (`/api/poptavka`). */
   action?: string
   /** Set on a listing page so the enquiry arrives attached to that listing. */
   propertyId?: number | string
@@ -250,8 +304,20 @@ export function ContactSection({
               <input type="hidden" name="propertyId" value={String(propertyId)} />
             ) : null}
 
+            {/*
+              Honeypot. People never see or reach it; bots that fill every field
+              do, and /api/poptavka drops any enquiry where it is not empty.
+              Moved off-screen rather than display:none, which some bots skip.
+            */}
+            <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label>
+                Web
+                <input name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+              </label>
+            </div>
+
             <div className="grid gap-10 sm:grid-cols-2">
-              <label className="block">
+              <label className="block sm:col-span-2">
                 <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">
                   Jméno a příjmení
                 </span>
@@ -260,6 +326,10 @@ export function ContactSection({
               <label className="block">
                 <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">E-mail</span>
                 <input name="email" type="email" placeholder="E-mail" className={line} />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">Telefon</span>
+                <input name="phone" type="tel" autoComplete="tel" placeholder="Nepovinné" className={line} />
               </label>
             </div>
 
@@ -305,7 +375,7 @@ export function ContactSection({
   )
 }
 
-export function Footer({ settings }: { settings: SiteSettings | null }) {
+export function Footer({ settings, site }: { settings: SiteSettings | null; site: SiteConfig }) {
   const c = settings?.contact
   const name = settings?.siteName ?? 'REALVISTA'
 
@@ -326,7 +396,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
               { href: '/#o-makleri', label: 'O Makléři' },
               { href: '/nemovitosti', label: 'Nabízené nemovitosti' },
               { href: '/nemovitosti?stav=prodano', label: 'Prodané nemovitosti' },
-              { href: '/blog', label: 'Blog & Poradna' },
+              ...(site.features.blog ? [{ href: '/blog', label: 'Blog & Poradna' }] : []),
             ].map((l) => (
               <li key={l.href}>
                 <a href={l.href} className="text-[15px] leading-[20px] text-footer-ink hover:text-white">

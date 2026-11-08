@@ -44,18 +44,6 @@ export const manifest: ThemeManifest = {
 
   stylesheet: './styles/theme.css',
 
-  /**
-   * Routes beyond the five the contract guarantees.
-   *
-   * The footer links both on every page, and neither exists yet — they are
-   * Phase 4. Declaring them here is not permission to leave them broken: it
-   * turns a silent 404 on every client site into a list conformance reads back,
-   * and the client template has to satisfy before a site goes live. Delete
-   * these two lines when the legal pages land and the check starts enforcing
-   * them for free.
-   */
-  routes: ['/zasady-ochrany-osobnich-udaju', '/cookies'],
-
   /** `Home` renders these, in this order, when `pages.home.sections` is unset. */
   sections: {
     home: ['hero', 'featured', 'services', 'agent', 'stats', 'contact', 'blog'],

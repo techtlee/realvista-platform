@@ -4,8 +4,11 @@ import {
   CONTRACT_ROUTES,
   cssVariants,
   danglingLinks,
+  headerComesFirst,
   internalLinks,
+  linksToBlog,
   strayTokens,
+  tagCount,
   usesThemeInline,
 } from '../src/conformance/checks.js'
 import { themeFixtures } from '../src/fixtures/index.js'
@@ -30,14 +33,19 @@ describe('danglingLinks', () => {
     expect(danglingLinks(html)).toEqual([])
   })
 
-  it('catches the links REALVISTA actually shipped to a 404', () => {
-    // These were live in the header and footer of every client site.
+  it('passes the legal pages, which the client template now provides', () => {
+    // These were live in the footer of every client site and 404'd, until the
+    // template implemented them; now they are part of the contract.
     const html = `
-      <a href="/blog">Blog</a>
       <a href="/zasady-ochrany-osobnich-udaju">GDPR</a>
       <a href="/cookies">Cookies</a>
     `
-    expect(danglingLinks(html)).toEqual(['/zasady-ochrany-osobnich-udaju', '/cookies'])
+    expect(danglingLinks(html)).toEqual([])
+  })
+
+  it('catches a route no client repo provides', () => {
+    const html = '<a href="/reference">Reference</a><a href="/cookies-old">x</a>'
+    expect(danglingLinks(html)).toEqual(['/reference', '/cookies-old'])
   })
 
   it('accepts a route the theme declares in its manifest', () => {
@@ -84,8 +92,16 @@ describe('danglingLinks', () => {
     ])
   })
 
-  it('covers exactly the five routes the contract guarantees', () => {
-    expect(CONTRACT_ROUTES).toHaveLength(5)
+  it('covers exactly the five page routes plus the two legal pages', () => {
+    expect([...CONTRACT_ROUTES]).toEqual([
+      '/',
+      '/nemovitosti',
+      '/nemovitosti/:slug',
+      '/blog',
+      '/blog/:slug',
+      '/zasady-ochrany-osobnich-udaju',
+      '/cookies',
+    ])
   })
 })
 
@@ -182,5 +198,35 @@ describe('fixtures', () => {
     for (const f of themeFixtures('crimson')) {
       expect(f.site.theme.variant).toBe('crimson')
     }
+  })
+})
+
+describe('tagCount', () => {
+  it('counts element openings, not lookalikes', () => {
+    const html = '<header class="a"></header><headline></headline><header-bar></header-bar><header>x</header>'
+    expect(tagCount(html, 'header')).toBe(2)
+  })
+})
+
+describe('headerComesFirst', () => {
+  it('passes a header ahead of the sections', () => {
+    expect(headerComesFirst('<header>nav</header><section>hero</section>')).toBe(true)
+  })
+
+  it('catches a header carried inside the hero', () => {
+    // REALVISTA before the fix: move the hero down and the nav goes with it.
+    expect(headerComesFirst('<section>featured</section><section><header>nav</header></section>')).toBe(false)
+  })
+
+  it('fails a page with no header at all', () => {
+    expect(headerComesFirst('<section>hero</section>')).toBe(false)
+  })
+})
+
+describe('linksToBlog', () => {
+  it('sees the index and posts, ignoring look-alike routes', () => {
+    expect(linksToBlog('<a href="/blog">Blog</a>')).toBe(true)
+    expect(linksToBlog('<a href="/blog/penb">Článek</a>')).toBe(true)
+    expect(linksToBlog('<a href="/blogger">x</a><a href="https://example.cz/blog">x</a>')).toBe(false)
   })
 })
