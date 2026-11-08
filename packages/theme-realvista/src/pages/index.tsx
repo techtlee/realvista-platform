@@ -18,16 +18,18 @@ import {
   pricePerSquareMetre,
   propertyHeading,
   regionCounts,
+  richTextToParagraphs,
 } from '@makleri/core/format'
+import type { GalleryItem } from '@makleri/core/content'
 import type { ReactNode } from 'react'
 
+import { MailIcon, PhoneIcon } from '../icons.js'
 import { manifest } from '../manifest.js'
 
 import {
   Container,
   ContactSection,
   Footer,
-  GhostButton,
   Header,
   MorePropertiesCard,
   MortgageCalculator,
@@ -73,6 +75,12 @@ export function RealvistaHome({
   const regions = regionCounts(listings)
   const grid = featured.length > 0 ? featured : listings.slice(0, 8)
   const remaining = Math.max(totalListings - grid.length, 0)
+  // The band's paragraph is the realtor's own introduction: the about text,
+  // else the agent bio, else name and title.
+  const agentIntro =
+    richTextToParagraphs(settings?.about?.body).join(' ') ||
+    richTextToParagraphs(agent?.bio).join(' ') ||
+    (agent ? (agent.jobTitle ? `${agent.name} — ${agent.jobTitle}.` : `${agent.name}.`) : '')
 
   // `pages.home.sections` was validated by core and then ignored, because the
   // order was hard-coded in JSX. Unknown ids are skipped rather than throwing:
@@ -158,30 +166,32 @@ export function RealvistaHome({
 
     services: <ServicesSection key="services" services={services} />,
 
+    // A 300px band, 200px below the listings. The 420×459 portrait stands on
+    // its bottom edge and rises 159px out of it; it sits 110px in from the
+    // right, mirroring the text's 110px indent on the left.
     agent: agent ? (
-      <section key="agent" id="o-makleri" className="rv-band-a relative mt-[150px] py-[55px]">
-        <Container className="grid items-center gap-10 lg:grid-cols-[1fr_420px]">
-          <div className="lg:pl-[110px]">
+      <section key="agent" id="o-makleri" className="rv-band-a relative mt-[150px] lg:mt-[200px]">
+        <Container>
+          <div className="grid gap-10 pt-[55px] lg:min-h-[300px] lg:grid-cols-[1fr_420px] lg:gap-5 lg:pb-[55px] xl:px-[110px]">
+          <div>
             <h2 className="max-w-[530px] text-[30px] font-medium leading-[36px] text-white">
               {settings?.about?.heading ?? 'Reality nejsou jen cihly. Jsou to vaše další životní kroky.'}
             </h2>
             <p className="rv-track mt-5 max-w-[640px] text-[16px] leading-[22px] text-white">
-              {agent.jobTitle ? `${agent.name} — ${agent.jobTitle}.` : `${agent.name}.`}
+              {agentIntro}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {agent.phone ? (
-                <GhostButton href={`tel:${agent.phone.replace(/\s/g, '')}`}>{agent.phone}</GhostButton>
-              ) : null}
-            </div>
           </div>
-          {imageUrl(agent.photo, 'card') ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl(agent.photo, 'card')}
-              alt={agent.name}
-              className="mx-auto h-[459px] w-[420px] object-cover object-top"
-            />
-          ) : null}
+          <div className="relative">
+            {imageUrl(agent.photo, 'card') ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imageUrl(agent.photo, 'card')}
+                alt={agent.name}
+                className="mx-auto block h-[459px] w-full max-w-[420px] object-cover object-top lg:absolute lg:-bottom-[55px] lg:right-0 lg:w-[420px]"
+              />
+            ) : null}
+          </div>
+          </div>
         </Container>
       </section>
     ) : null,
@@ -189,7 +199,8 @@ export function RealvistaHome({
     stats: settings?.stats?.length ? (
       <section key="stats" className="rv-band-b py-[72px]">
         <Container>
-          <dl className="grid gap-12 text-center sm:grid-cols-3">
+          {/* Column centres sit at 330 / 720 / 1118 on the canvas: a 1182px row, not the full 1300. */}
+          <dl className="mx-auto grid max-w-[1182px] gap-12 text-center sm:grid-cols-3">
             {settings.stats.map((s, i) => (
               <div key={i}>
                 <dt className="text-[60px] font-medium leading-[67px] text-white">{s.value}</dt>
