@@ -271,7 +271,7 @@ export function ContactSection({
   propertyId,
 }: {
   settings: SiteSettings | null
-  /** Where the form posts. The client repo owns the route; see manifest.routes. */
+  /** Where the form posts. The client repo owns the route (`/api/poptavka`). */
   action?: string
   /** Set on a listing page so the enquiry arrives attached to that listing. */
   propertyId?: number | string
@@ -304,8 +304,20 @@ export function ContactSection({
               <input type="hidden" name="propertyId" value={String(propertyId)} />
             ) : null}
 
+            {/*
+              Honeypot. People never see or reach it; bots that fill every field
+              do, and /api/poptavka drops any enquiry where it is not empty.
+              Moved off-screen rather than display:none, which some bots skip.
+            */}
+            <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label>
+                Web
+                <input name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+              </label>
+            </div>
+
             <div className="grid gap-10 sm:grid-cols-2">
-              <label className="block">
+              <label className="block sm:col-span-2">
                 <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">
                   Jméno a příjmení
                 </span>
@@ -314,6 +326,10 @@ export function ContactSection({
               <label className="block">
                 <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">E-mail</span>
                 <input name="email" type="email" placeholder="E-mail" className={line} />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">Telefon</span>
+                <input name="phone" type="tel" autoComplete="tel" placeholder="Nepovinné" className={line} />
               </label>
             </div>
 

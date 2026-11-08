@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { mapView, osmEmbedUrl } from '../src/components/PropertyMap.js'
 import { monthlyPayment } from '../src/components/MortgageCalculator.js'
-import { Header, RealvistaHome, RealvistaPropertyDetail } from '../src/index.js'
+import { ContactSection, Header, RealvistaHome, RealvistaPropertyDetail } from '../src/index.js'
 
 /**
  * REALVISTA's modules, as the storefront configurator sells them.
@@ -145,5 +145,23 @@ describe('mortgage calculator', () => {
     expect(monthlyPayment(6792000, 4.9, 30)).toBe(36047)
     expect(monthlyPayment(360000, 0, 30)).toBe(1000)
     expect(monthlyPayment(0, 4.9, 30)).toBe(0)
+  })
+})
+
+describe('contact form', () => {
+  const html = renderToStaticMarkup(<ContactSection settings={full.settings} />)
+
+  it('carries a honeypot that people cannot reach', () => {
+    const input = html.match(/<input[^>]*name="website"[^>]*>/)?.[0]
+    expect(input, 'no honeypot').toBeDefined()
+    expect(input).toContain('tabindex="-1"')
+    expect(input).toMatch(/autocomplete="off"/i)
+    expect(html).toMatch(/<div aria-hidden="true" class="absolute -left-\[9999px\][^"]*"><label>Web<input[^>]*name="website"/)
+  })
+
+  it('offers an optional phone field', () => {
+    const input = html.match(/<input[^>]*name="phone"[^>]*>/)?.[0]
+    expect(input).toContain('type="tel"')
+    expect(input).not.toContain('required')
   })
 })
