@@ -642,11 +642,14 @@ export function RealvistaPostDetail({ site, settings, post, recent }: PostDetail
         </Container>
       ) : null}
 
-      <Container className="mt-[60px] max-w-[760px]">
-        {post.excerpt ? (
-          <p className="text-[22px] font-medium leading-[32px] text-brand">{post.excerpt}</p>
-        ) : null}
-        <RichText value={post.body} className="mt-[40px] text-[16px] leading-[26px] text-brand" />
+      {/* A 760px reading column; on Container itself the max-width loses to Container's own. */}
+      <Container className="mt-[60px]">
+        <div className="mx-auto max-w-[760px]">
+          {post.excerpt ? (
+            <p className="text-[22px] font-medium leading-[32px] text-brand">{post.excerpt}</p>
+          ) : null}
+          <RichText value={post.body} className="mt-[40px] text-[16px] leading-[26px] text-brand" />
+        </div>
       </Container>
 
       {recent.length > 0 ? (
