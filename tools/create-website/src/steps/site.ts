@@ -181,6 +181,7 @@ export const siteInstall: Step = {
     return (await hasStepCommit(ctx, ctx.paths.site, 'site-install')) ? p : { state: 'partial', detail: 'lockfile not committed' }
   },
   async run(ctx) {
+    if (await upToDate(ctx, siteInstall)) return outputs({ lockSha: fileSha(join(ctx.paths.site, 'pnpm-lock.yaml')), reused: true })
     await ctx.exec.run(['pnpm', 'install'], {
       cwd: ctx.paths.site,
       logFile: ctx.log.stepLog('site-install'),
@@ -278,6 +279,11 @@ export const siteStart: Step = {
   probe: (ctx) => probeServer(ctx, 'site', () => siteServesVariant(ctx)),
   recover: (ctx) => stopRecorded(ctx, 'site'),
   async run(ctx) {
+    // Our server, healthy, started for this build: nothing to do.
+    if (await upToDate(ctx, siteStart)) {
+      const rec = ctx.state.get().processes.site!
+      return outputs({ pid: rec.pid, port: rec.port, url: siteUrlLocal(ctx), reused: true })
+    }
     // A stale server from an older build would keep serving old pages.
     await stopRecorded(ctx, 'site')
     const port = ctx.state.get().ports.site

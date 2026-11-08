@@ -13,7 +13,13 @@ import type { Ctx, Json, OutwardStepId, Step } from '../types.js'
 import { CwError, OUTWARD_STEP_IDS } from '../types.js'
 import { runChecks } from '../verify/checks.js'
 import { commitRecord } from './record.js'
-import { fingerprintOf, outputs } from './util.js'
+import { fingerprintOf, hasStepCommit, outputs } from './util.js'
+
+async function recordUpToDate(ctx: Ctx): Promise<boolean> {
+  if (!(await hasStepCommit(ctx, ctx.paths.record, 'handover'))) return false
+  const r = await ctx.exec.run(['git', 'status', '--porcelain', '--', '.', ':(exclude)create-website.state.json'], { cwd: ctx.paths.record, allowFailure: true })
+  return r.code === 0 && r.stdout.trim() === ''
+}
 
 /** The CRM client, registering its credentials with the secret store's redaction. */
 export function crmClient(ctx: Ctx): CrmClient | null {
@@ -172,7 +178,9 @@ export const handover: Step = {
   async run(ctx) {
     const summary = handoverSummary(ctx)
     // The state file and the plan carry no secrets; commit them so the record repo tells the whole story.
-    if (existsSync(join(ctx.paths.record, '.git'))) {
+    // Once per provisioning: the state file changes on every run, so a resume
+    // commits again only when something besides it changed (e.g. the plan).
+    if (existsSync(join(ctx.paths.record, '.git')) && !(await recordUpToDate(ctx))) {
       await commitRecord(ctx, `Provisioned ${ctx.request.slug} locally; outward steps planned`, 'handover')
     }
     return summary

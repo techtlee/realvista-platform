@@ -25,6 +25,7 @@ import {
   parseKv,
   rootTemplateTrailer,
   siteUrlLocal,
+  upToDate,
 } from './util.js'
 
 const ENV: SecretRef['file'] = 'backend/.env'
@@ -164,6 +165,7 @@ export const backendInstall: Step = {
   fingerprint: (ctx) => fingerprintOf({ lock: fileSha(join(ctx.paths.backend, 'pnpm-lock.yaml')) }),
   probe: async (ctx) => installProbe(ctx.paths.backend, ctx.state.get().steps['backend-install']?.outputs?.lockSha),
   async run(ctx) {
+    if (await upToDate(ctx, backendInstall)) return outputs({ lockSha: fileSha(join(ctx.paths.backend, 'pnpm-lock.yaml')), reused: true })
     await ctx.exec.run(['pnpm', 'install', '--frozen-lockfile'], {
       cwd: ctx.paths.backend,
       logFile: ctx.log.stepLog('backend-install'),
@@ -389,6 +391,7 @@ export const backendSeedAdmin: Step = {
     return n > 0 ? { state: 'done' } : { state: 'absent' }
   },
   async run(ctx) {
+    if (await upToDate(ctx, backendSeedAdmin)) return outputs({ result: 'exists', reused: true })
     const r = await ctx.exec.run(['pnpm', 'seed:admin'], {
       cwd: ctx.paths.backend,
       env: await backendScriptEnv(ctx, {
@@ -430,6 +433,14 @@ export const backendSeedContent: Step = {
     return settings > 0 ? { state: 'done' } : { state: 'partial', detail: 'tenant exists without content' }
   },
   async run(ctx) {
+    // Re-seeding replaces content; only do it when the request or the copy changed.
+    if (await upToDate(ctx, backendSeedContent)) {
+      const tenantId = await tenantIdBySlug(ctx, ctx.request.slug)
+      ctx.state.update((s) => {
+        if (tenantId) s.tenantId = tenantId
+      })
+      return outputs({ tenantId, reused: true })
+    }
     ctx.testHooks?.mid('backend-seed-content')
     const r = await ctx.exec.run(['pnpm', 'seed:client-site'], {
       cwd: ctx.paths.backend,
@@ -468,6 +479,7 @@ export const backendSeedRealtor: Step = {
     return email && (await userExists(ctx, email)) ? { state: 'done' } : { state: 'absent' }
   },
   async run(ctx) {
+    if (await upToDate(ctx, backendSeedRealtor)) return outputs({ reused: true })
     const r = await ctx.exec.run(['pnpm', 'seed:client'], {
       cwd: ctx.paths.backend,
       env: await backendScriptEnv(ctx, {
