@@ -366,16 +366,19 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
           <a href="/nemovitosti" className="hover:text-brand">
             Nemovitosti
           </a>
-          <span>›</span>
+          <span aria-hidden="true">&gt;</span>
           <span>{locationLabel(property)}</span>
-          <span>›</span>
+          <span aria-hidden="true">&gt;</span>
           <span className="font-medium text-brand">{propertyHeading(property)}</span>
         </nav>
       </Container>
 
       {gallery.length > 0 ? (
-        <Container className="mt-[38px]">
-          <div className="grid gap-5 lg:grid-cols-[640px_1fr]">
+        // Three columns, 640 / 310 / 310: the cover, two 240px photos stacked,
+        // then one 430px photo with the "all photos" bar under it. Four photos
+        // show; the bar counts the rest.
+        <Container className="mt-5">
+          <div className="grid gap-5 lg:grid-cols-[640fr_310fr_310fr]">
             <div className="h-[320px] overflow-hidden rounded-btn bg-accent sm:h-[500px]">
               {imageUrl(main?.image, 'hero') ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -388,43 +391,38 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
             </div>
 
             {rest.length > 0 ? (
-              <div className="grid gap-5 sm:grid-cols-2">
-                {rest.slice(0, 4).map((g, i) => (
-                  <div key={i} className="h-[150px] overflow-hidden rounded-btn bg-accent sm:h-[240px]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imageUrl(g.image, 'card')}
-                      alt={g.alt ?? ''}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-5 lg:grid-cols-1 lg:grid-rows-[240px_240px]">
+                {rest.slice(0, 2).map((g, i) => (
+                  <GalleryTile key={i} item={g} className="h-[150px] sm:h-[240px]" />
                 ))}
               </div>
             ) : null}
-          </div>
 
-          {gallery.length > 5 ? (
-            <div className="mt-5 flex justify-end">
-              <div className="flex h-[50px] w-full items-center justify-between rounded-btn bg-brand px-[30px] sm:w-[310px]">
-                <span className="text-[16px] font-bold leading-[20px] text-white">Všechny fotky</span>
-                <span className="text-[16px] font-bold leading-[20px] text-white opacity-60">
-                  +{gallery.length - 5}
-                </span>
+            {rest.length > 2 || gallery.length > 4 ? (
+              <div className="flex flex-col gap-5">
+                {rest[2] ? <GalleryTile item={rest[2]} className="hidden lg:block lg:h-[430px]" /> : null}
+                {gallery.length > 4 ? (
+                  <div className="mt-auto flex h-[50px] w-full items-center justify-between rounded-btn bg-brand px-[30px]">
+                    <span className="text-[16px] font-bold leading-[20px] text-white">Všechny fotky</span>
+                    <span className="text-[16px] font-bold leading-[20px] text-white opacity-60">
+                      +{gallery.length - 4}
+                    </span>
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </Container>
       ) : null}
 
-      <Container className="mt-[50px]">
-        <div className="flex flex-wrap items-start justify-between gap-6 rounded-btn bg-card px-5 py-[30px] shadow-card sm:px-[50px]">
+      <Container className="mt-5">
+        <div className="flex min-h-[150px] flex-wrap items-start justify-between gap-6 rounded-btn bg-card px-5 py-[30px] shadow-card sm:px-[50px]">
           <div>
             <h1 className="max-w-[595px] text-[30px] font-medium leading-[36px] text-brand">
               {property.title}
             </h1>
             {specPills.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-[10px] flex flex-wrap gap-3">
                 {specPills.map((s) => (
                   <SpecPill key={s}>{s}</SpecPill>
                 ))}
@@ -440,16 +438,17 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
 
       <Container className="mt-[100px] grid gap-[60px] lg:grid-cols-[640px_1fr] lg:gap-[130px]">
         <div>
-          <h2 className="text-[30px] font-medium leading-[39px] text-brand">Popis nemovitosti</h2>
+          <h2 className="text-[30px] font-medium leading-[39px] text-brand">O nemovitosti</h2>
           <RichText
             value={property.description}
-            className="mt-[50px] text-[16px] leading-[26px] text-brand"
+            className="mt-[11px] text-[16px] leading-[26px] text-brand"
+            paragraphClassName="mb-[26px] last:mb-0"
           />
 
           <h2 className="mt-[100px] text-[30px] font-medium leading-[39px] text-brand">
             Parametry nemovitosti
           </h2>
-          <dl className="mt-[25px] border-t border-accent">
+          <dl className="mt-[21px] border-t border-accent">
             {params
               .filter(([, v]) => v)
               .map(([k, v]) => (
@@ -469,7 +468,7 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
 
         <div className="flex flex-col gap-[30px]">
           {agent ? (
-            <aside className="h-fit rounded-btn bg-card p-[40px] shadow-card">
+            <aside className="h-fit rounded-btn bg-card px-5 pb-10 pt-[30px] shadow-card sm:px-[40px] lg:min-h-[400px]">
               <p className="text-center text-[30px] font-medium leading-[39px] text-brand">
                 Máte zájem o prohlídku?
               </p>
@@ -491,23 +490,30 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
                 </div>
               </div>
 
-              <div className="mt-[40px] flex flex-wrap gap-3">
-                <SolidButton href="#kontakt" className="flex-1">
+              {/* Two 212px buttons 26px apart; each contact line centred under its button. */}
+              <div className="mt-[40px] grid gap-3 sm:grid-cols-2 sm:gap-[26px]">
+                <SolidButton href="#kontakt" className="px-4">
                   Domluvit prohlídku
                 </SolidButton>
                 {agent.phone ? (
-                  <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
+                  <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="px-4">
                     Zavolat makléři
                   </OutlineButton>
                 ) : null}
               </div>
 
-              <div className="mt-[60px] flex flex-wrap gap-x-12 gap-y-3">
+              <div className="mt-[50px] grid gap-3 sm:grid-cols-2 sm:gap-[26px]">
                 {agent.phone ? (
-                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.phone}</p>
+                  <p className="flex items-center gap-3 text-[16px] font-medium leading-[21px] text-brand sm:justify-center">
+                    <PhoneIcon className="shrink-0" />
+                    {agent.phone}
+                  </p>
                 ) : null}
                 {agent.email ? (
-                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.email}</p>
+                  <p className="flex items-center gap-3 text-[16px] font-medium leading-[21px] text-brand sm:justify-center">
+                    <MailIcon className="shrink-0" />
+                    {agent.email}
+                  </p>
                 ) : null}
               </div>
             </aside>
@@ -517,25 +523,27 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
       </Container>
 
       {property.address?.city ? (
-        <Container className="mt-[100px]">
+        <Container className="mt-[100px] lg:mt-[115px]">
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Lokalita</h2>
-          <p className="mt-[50px] max-w-[640px] text-[16px] leading-[24px] text-brand">
+          <p className="mt-[11px] max-w-[640px] text-[16px] leading-[24px] text-brand">
             {locationLabel(property)}
             {property.address.hideExactAddress
               ? '. Přesná adresa je k dispozici na vyžádání.'
               : '.'}
           </p>
-          {site.features.listingMap ? <PropertyMap property={property} className="mt-[30px]" /> : null}
+          {site.features.listingMap ? (
+            <PropertyMap property={property} className="mt-[30px] max-w-[640px] lg:mt-[80px]" />
+          ) : null}
         </Container>
       ) : null}
 
       {similar.length > 0 ? (
-        <Container className="mt-[100px]">
+        <Container className="mt-[61px]">
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Podobné nemovitosti</h2>
-          <p className="mt-2 text-[16px] leading-[21px] text-muted">
+          <p className="text-[16px] leading-[21px] text-muted">
             Prohlédněte si další exkluzivní nemovitosti v okolí.
           </p>
-          <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-[55px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {similar.map((p) => (
               <PropertyCard key={p.id} property={p} />
             ))}
@@ -543,13 +551,26 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
         </Container>
       ) : null}
 
-      <div className="mt-[150px]">
-        {/* The enquiry arrives attached to the listing it was sent from. */}
-        <ContactSection settings={settings} propertyId={property.id} />
-      </div>
+      {/* The enquiry arrives attached to the listing it was sent from. */}
+      <ContactSection settings={settings} propertyId={property.id} />
 
       <Footer settings={settings} site={site} />
     </>
+  )
+}
+
+/** One photo of the listing gallery, cropped to whatever box the grid gives it. */
+function GalleryTile({ item, className = '' }: { item: GalleryItem; className?: string }) {
+  return (
+    <div className={`overflow-hidden rounded-btn bg-accent ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl(item.image, 'card')}
+        alt={item.alt ?? ''}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+    </div>
   )
 }
 

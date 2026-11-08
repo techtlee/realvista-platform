@@ -492,14 +492,23 @@ export function Footer({ settings, site }: { settings: SiteSettings | null; site
  * The flattening itself is `@makleri/core/format` — a theme decides the element
  * and the spacing, not what the document says.
  */
-export function RichText({ value, className = '' }: { value: unknown; className?: string }) {
+export function RichText({
+  value,
+  className = '',
+  paragraphClassName = 'mb-4 last:mb-0',
+}: {
+  value: unknown
+  className?: string
+  /** Spacing between paragraphs; a listing description leaves one blank line (26px). */
+  paragraphClassName?: string
+}) {
   const paragraphs = richTextToParagraphs(value)
   if (paragraphs.length === 0) return null
 
   return (
     <div className={className}>
       {paragraphs.map((text, i) => (
-        <p key={i} className="mb-4 last:mb-0">
+        <p key={i} className={paragraphClassName}>
           {text}
         </p>
       ))}
