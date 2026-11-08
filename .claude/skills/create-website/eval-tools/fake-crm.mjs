@@ -125,12 +125,12 @@ const server = createServer(async (req, res) => {
       if (!data.sites[m[1]]) return send(res, 404, { errors: [{ message: 'Not Found' }] })
       const e = body ?? {}
       const missing = ['key', 'step', 'status'].filter((k) => !e[k])
-      if (missing.length) return send(res, 400, { errors: [{ message: `missing ${missing.join(', ')}` }] })
-      if (!['ok', 'failed', 'skipped'].includes(e.status)) return send(res, 400, { errors: [{ message: 'bad status' }] })
-      if (seenKeys.has(e.key)) return send(res, 200, { ok: true, duplicate: true })
+      if (missing.length) return send(res, 400, { error: 'Neplatný záznam průběhu.', issues: missing.map((k) => ({ path: k, message: 'Required' })) })
+      if (!['ok', 'failed', 'skipped'].includes(e.status)) return send(res, 400, { error: 'Neplatný záznam průběhu.', issues: [{ path: 'status', message: 'ok | failed | skipped' }] })
+      if (seenKeys.has(e.key)) return send(res, 200, { appended: false, key: e.key }) // CW3: 200 when already logged
       seenKeys.add(e.key)
       appendFileSync(logPath, JSON.stringify({ siteId: Number(m[1]), key: e.key, runId: e.runId ?? null, step: e.step, status: e.status, at: e.at ?? new Date().toISOString(), detail: e.detail ?? '', receivedAt: new Date().toISOString() }) + '\n')
-      return send(res, 201, { ok: true, duplicate: false })
+      return send(res, 201, { appended: true, key: e.key })
     }
     if (path.startsWith('/api/sites') && method !== 'GET') return send(res, 403, { errors: [{ message: 'Only provisioning-log appends are allowed.' }] })
     return send(res, 404, { error: 'not found' })
