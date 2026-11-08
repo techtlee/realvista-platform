@@ -1,6 +1,7 @@
 import { defineSiteConfig } from '@makleri/core/config'
 
 import theme from './app/theme'
+import { cmsUrl, siteUrl } from './site.urls'
 
 /**
  * The entire client repo, in one file.
@@ -14,13 +15,13 @@ import theme from './app/theme'
  * default palette with no error anywhere, shipping the wrong brand colour to a
  * paying client.
  */
-export default defineSiteConfig(
+const site = defineSiteConfig(
   {
     siteId: 'demo-reality',
     theme: { name: 'realvista', variant: 'indigo' },
     domain: 'localhost:3001',
     cms: {
-      url: process.env.NEXT_PUBLIC_CMS_URL ?? 'http://localhost:3000',
+      url: cmsUrl,
       tenantId: Number(process.env.TENANT_ID ?? 5),
     },
     features: { blog: true, listingMap: true, mortgageCalculator: true },
@@ -30,3 +31,14 @@ export default defineSiteConfig(
   },
   theme,
 )
+
+// next.config.ts reads site.urls.ts instead of this file, so the two must name
+// the same origin. Fails the build rather than shipping a sitemap, canonical
+// links and image origins that disagree with the site's own config.
+if (site.siteUrl !== siteUrl) {
+  throw new Error(
+    `site.urls.ts siteUrl "${siteUrl}" does not match site.config.ts ("${site.siteUrl}", from domain). Regenerate both.`,
+  )
+}
+
+export default site
