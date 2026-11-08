@@ -2,7 +2,7 @@
  * Phase C: site-<slug> (runbook steps 10–12). The export itself is WP5's
  * exporter; these steps wrap it with probes, env, install, build and start.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { computeClosure, exportSite, makeStandalone, planDependencies, siteConfigInputFor } from '../site/index.js'
@@ -28,6 +28,7 @@ import {
   httpStatus,
   outputs,
   siteUrlLocal,
+  upToDate,
 } from './util.js'
 
 const SITE_ENV: SecretRef['file'] = 'site/.env.local'
@@ -89,7 +90,11 @@ export const siteStandalone: Step = {
   },
   probe: async (ctx) => ((await hasStepCommit(ctx, ctx.paths.site, 'site-standalone')) ? { state: 'done' } : { state: 'absent' }),
   async run(ctx) {
+    if (await upToDate(ctx, siteStandalone)) return outputs({ reused: true })
     const sha = platformCommit(ctx)
+    // makeStandalone expects the pristine copy: restore the root commit's tree first.
+    const root = (await ctx.exec.run(['git', 'rev-list', '--max-parents=0', 'HEAD'], { cwd: ctx.paths.site })).stdout.trim().split('\n')[0]!
+    await ctx.exec.run(['git', 'checkout', root, '--', '.'], { cwd: ctx.paths.site })
     const closure = await computeClosure(ctx.cfg.platformRepo, sha)
     try {
       const deps = await planDependencies(closure)
@@ -104,7 +109,6 @@ export const siteStandalone: Step = {
         deps,
       } as Parameters<typeof makeStandalone>[2])
     } finally {
-      const { rmSync } = await import('node:fs')
       rmSync(closure.treeRoot, { recursive: true, force: true })
     }
     const commit = await commitAll(ctx, ctx.paths.site, `Regenerate the standalone config for ${ctx.request.slug}`, {
@@ -152,6 +156,7 @@ export const siteEnv: Step = {
   },
   async run(ctx) {
     const want = await expectedSiteEnv(ctx)
+    if ((await siteEnv.probe(ctx)).state === 'done') return outputs({ keys: Object.keys(want), reused: true })
     // An explicit rewrite (set), unlike credentials: these values are derived, never original.
     for (const [k, v] of Object.entries(want)) await ctx.secrets.set({ file: SITE_ENV, key: k }, v)
     ctx.state.update((s) => {
@@ -232,6 +237,8 @@ export const siteBuild: Step = {
     return { state: 'done' }
   },
   async run(ctx) {
+    // BUILD_ID plus a matching fingerprint file means this exact commit+env is already built.
+    if ((await siteBuild.probe(ctx)).state === 'done') return outputs({ fingerprint: buildFingerprint(ctx), reused: true })
     // The build prerenders from the backend (runbook F11): make sure it is up.
     if (!(await backendHealthy(ctx))) {
       ctx.log.warn('backend not healthy before site-build; restarting it')

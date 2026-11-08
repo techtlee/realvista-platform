@@ -197,3 +197,16 @@ export function siteUrlLocal(ctx: Ctx): string {
 export function canonicalSiteUrl(ctx: Ctx): string {
   return `https://${ctx.request.slug}.${ctx.cfg.subdomainBase}`
 }
+
+/**
+ * True when re-running would only redo finished work: the probe says the
+ * world is complete and the inputs did not change since the step last
+ * succeeded (or it never ran itself, e.g. the exporter already made the
+ * standalone commit). The runner calls run() whenever state is not `done`,
+ * so run() uses this to stay idempotent.
+ */
+export async function upToDate(ctx: Ctx, step: { id: StepId; probe(ctx: Ctx): Promise<{ state: string }>; fingerprint(ctx: Ctx): string }): Promise<boolean> {
+  if ((await step.probe(ctx)).state !== 'done') return false
+  const prev = ctx.state.step(step.id).fingerprint
+  return prev === undefined || prev === step.fingerprint(ctx)
+}
