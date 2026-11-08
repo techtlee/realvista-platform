@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: czech-starter-copy-friendly-tone
+expected_outcome: |
+  kralova-reality is provisioned with personalised starter copy in Czech: friendly but vykání, about Brno, with
+  the brand name, no invented facts (stats stay [DOPLNIT]), legal pages marked [NÁVRH], and cw copy validate passes.
+context:
+  scaffold_script: place-files.sh

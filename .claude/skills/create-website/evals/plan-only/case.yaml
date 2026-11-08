@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: plan-only
+expected_outcome: |
+  Nothing is executed: no directories, databases or processes. Claude runs only cw plan --outward (validate/status
+  are fine). The reply covers runbook steps 13–19 with the exact commands, secret references instead of values, and
+  the ISR note (no deploy hook).
+context:
+  scaffold_script: place-files.sh

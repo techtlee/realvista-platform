@@ -1,0 +1,64 @@
+{
+  "requestVersion": 1,
+  "slug": "novak-test",
+  "contact": {
+    "name": "Jan Novák",
+    "email": "jan.novak@novak-test.cz",
+    "phone": "+420 600 000 111"
+  },
+  "company": {
+    "name": "Jan Novák Reality s.r.o.",
+    "city": "Plzeň"
+  },
+  "provisioning": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-11-08T10:30:00.000Z",
+    "theme": {
+      "name": "realvista",
+      "variant": "clay"
+    },
+    "modules": {
+      "blog": true,
+      "services": true,
+      "listingMap": true,
+      "mortgageCalculator": true,
+      "references": false
+    },
+    "sections": {
+      "home": [
+        "hero",
+        "agent",
+        "featured",
+        "stats",
+        "services",
+        "blog",
+        "contact"
+      ]
+    },
+    "brand": {
+      "name": "Jan Novák Reality",
+      "tagline": "Váš makléř pro Plzeň a okolí"
+    },
+    "content": {
+      "tone": "formal",
+      "locale": "cs-CZ"
+    },
+    "domain": {
+      "situation": "have-access",
+      "name": "novak-test.cz",
+      "registrar": "wedos",
+      "emailOnDomain": "yes"
+    },
+    "plan": {
+      "tier": "standard",
+      "billingPeriod": "yearly"
+    },
+    "source": {
+      "page": "/",
+      "previewedVariants": [
+        "indigo",
+        "clay"
+      ]
+    }
+  }
+}

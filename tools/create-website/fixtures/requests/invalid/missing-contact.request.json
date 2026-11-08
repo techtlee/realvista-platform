@@ -1,0 +1,52 @@
+{
+  "requestVersion": 1,
+  "slug": "svoboda-reality",
+  "company": {
+    "name": "Svoboda Reality s.r.o."
+  },
+  "provisioning": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-11-08T09:00:00.000Z",
+    "theme": {
+      "name": "realvista",
+      "variant": "indigo"
+    },
+    "modules": {
+      "blog": true,
+      "services": false,
+      "listingMap": true,
+      "mortgageCalculator": true,
+      "references": false
+    },
+    "sections": {
+      "home": [
+        "hero",
+        "featured",
+        "services",
+        "agent",
+        "stats",
+        "contact",
+        "blog"
+      ]
+    },
+    "brand": {
+      "name": "Svoboda Reality",
+      "tagline": "Klidný prodej vašeho bytu"
+    },
+    "content": {
+      "tone": "friendly",
+      "locale": "cs-CZ"
+    },
+    "domain": {
+      "situation": "none",
+      "emailOnDomain": "no"
+    },
+    "plan": {
+      "tier": "standard",
+      "billingPeriod": "yearly"
+    },
+    "source": {
+      "page": "/"
+    }
+  }
+}

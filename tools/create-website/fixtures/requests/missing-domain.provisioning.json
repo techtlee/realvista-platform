@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-11-08T09:00:00.000Z",
+  "theme": {
+    "name": "realvista",
+    "variant": "clay"
+  },
+  "modules": {
+    "blog": true,
+    "services": true,
+    "listingMap": true,
+    "mortgageCalculator": true,
+    "references": false
+  },
+  "sections": {
+    "home": [
+      "hero",
+      "featured",
+      "services",
+      "agent",
+      "stats",
+      "contact",
+      "blog"
+    ]
+  },
+  "brand": {
+    "name": "Dvořák Reality"
+  },
+  "content": {
+    "tone": "formal",
+    "locale": "cs-CZ"
+  },
+  "plan": {
+    "tier": "standard",
+    "billingPeriod": "yearly"
+  },
+  "source": {
+    "page": "/"
+  }
+}

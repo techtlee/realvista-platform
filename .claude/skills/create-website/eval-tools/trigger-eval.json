@@ -1,0 +1,22 @@
+[
+  {"query": "continue the provisioning of novak, it stopped somewhere around the site build last night", "should_trigger": true},
+  {"query": "lead 14 in the crm is qualified and has a site record now (slug horak-reality). can you spin up his backend + site locally so I can show him on thursday?", "should_trigger": true},
+  {"query": "/create-website ~/Downloads/svoboda-reality.provisioning-request.json", "should_trigger": true},
+  {"query": "I downloaded the provisioning json for Králová Reality from the CRM dashboard (kral.provisioning.json in Downloads). Set the client up locally, slug kralova-reality, contact Lenka Králová lenka@kralova-reality.cz", "should_trigger": true},
+  {"query": "what's the state of the svoboda-reality client? did verify pass, and is the CRM log up to date?", "should_trigger": true},
+  {"query": "Before I do anything on Vercel for client #2: print me the exact production plan (GitHub repos, Neon, Vercel env, DNS) for clients/cerna-reality, don't execute anything", "should_trigger": true},
+  {"query": "new client signed today — Petra Svobodová, Svoboda Reality. her lead is #21. make her website", "should_trigger": true},
+  {"query": "the local site for kralova-reality isn't running anymore after my reboot, bring both processes back up and re-check it", "should_trigger": true},
+  {"query": "provision a second test client like novak-test but in indigo with services off, using fixtures/requests/svoboda-friendly-indigo.request.json", "should_trigger": true},
+  {"query": "the CRM was down when I provisioned cerna-reality yesterday, push the pending provisioning log entries to it now", "should_trigger": true},
+  {"query": "fix the theme's hero spacing on mobile, the headline overlaps the search box under 380px in theme-realvista", "should_trigger": false},
+  {"query": "add a lead to the CRM: Martin Horák, horak@email.cz, 1-5 listings, wants the clay colourway", "should_trigger": false},
+  {"query": "write a seed script in cms that creates 3 sample listings for a tenant, I want to call it from pnpm seed:demo", "should_trigger": false},
+  {"query": "the storefront picker shows 'mono' twice in the colourway list, can you look at why", "should_trigger": false},
+  {"query": "in the crm, the qualify step returns 422 missing domain.situation even though I filled it — debug the endpoint in src/crm/endpoints.ts", "should_trigger": false},
+  {"query": "add a new colourway 'forest' to theme-realvista and make sure the catalog and conformance tests pick it up", "should_trigger": false},
+  {"query": "site-novak-test: the realtor says the blog page 404s on the live site. check the route and the revalidation", "should_trigger": false},
+  {"query": "write the README section for the platform repo explaining how apps/site gets its config from site.config.ts", "should_trigger": false},
+  {"query": "create a new Next.js landing page for my own agency's marketing site, nothing to do with clients, just a quick one-pager", "should_trigger": false},
+  {"query": "rename the tenant slug 'demo-reality' to 'demo-reality-2' in the local cms database and update the user memberships", "should_trigger": false}
+]

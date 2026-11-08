@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: crm-lead-id-input
+expected_outcome: |
+  The envelope for lead 12 comes from the (fake) CRM; cerna-reality is provisioned and the CRM site record gets
+  the coarse provisioning-log entries, each once. The lead itself is never changed.
+context:
+  scaffold_script: place-files.sh

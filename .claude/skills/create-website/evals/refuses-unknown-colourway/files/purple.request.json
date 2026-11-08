@@ -1,0 +1,52 @@
+{
+  "requestVersion": 1,
+  "slug": "novotna-reality",
+  "contact": {
+    "name": "Eva Novotná",
+    "email": "eva@novotna-reality.example"
+  },
+  "provisioning": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-11-08T09:00:00.000Z",
+    "theme": {
+      "name": "realvista",
+      "variant": "purple"
+    },
+    "modules": {
+      "blog": true,
+      "services": true,
+      "listingMap": true,
+      "mortgageCalculator": true,
+      "references": false
+    },
+    "sections": {
+      "home": [
+        "hero",
+        "featured",
+        "services",
+        "agent",
+        "stats",
+        "contact",
+        "blog"
+      ]
+    },
+    "brand": {
+      "name": "Novotná Reality"
+    },
+    "content": {
+      "tone": "formal",
+      "locale": "cs-CZ"
+    },
+    "domain": {
+      "situation": "none",
+      "emailOnDomain": "no"
+    },
+    "plan": {
+      "tier": "standard",
+      "billingPeriod": "yearly"
+    },
+    "source": {
+      "page": "/"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: happy-path-request-file
+expected_outcome: |
+  svoboda-reality is provisioned locally end to end: backend-svoboda-reality and site-svoboda-reality exist,
+  the site runs in indigo with the home sections hero, featured, agent, stats, contact, blog (services is off),
+  one tenant and one realtor user exist, verify and secrets-check pass, and the outward steps are only planned.
+  The reply gives both local URLs, the realtor's email, where the credentials file is (not the password),
+  the [NÁVRH]/[DOPLNIT] TODOs and the outward plan path.
+context:
+  scaffold_script: place-files.sh

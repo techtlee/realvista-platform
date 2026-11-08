@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: slug-collision-different-lead
+expected_outcome: |
+  A complete novak-test (record, backend, site, DB) from a different request already exists. The run stops
+  on the collision without touching any of it; the reply explains that another lead owns novak-test, proposes a free
+  slug (e.g. novak-test-2) or a CRM-side slug change, and asks before going on.
+context:
+  scaffold_script: place-files.sh

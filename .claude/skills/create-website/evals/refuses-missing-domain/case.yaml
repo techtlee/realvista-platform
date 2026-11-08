@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: refuses-missing-domain
+expected_outcome: |
+  Validation fails because the provisioning JSON has no domain. Nothing is created. The reply says the
+  domain (its situation, and whether e-mail runs on it) is settled in the CRM qualification call and does not invent
+  a domain.
+context:
+  scaffold_script: place-files.sh

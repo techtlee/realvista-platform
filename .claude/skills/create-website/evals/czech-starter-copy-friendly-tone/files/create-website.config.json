@@ -1,0 +1,36 @@
+{
+  "clientsDir": "./clients",
+  "platformRepo": "${CW_EVAL_PLATFORM}",
+  "cmsRepo": "${CW_EVAL_CMS}",
+  "cmsRef": "${CW_EVAL_CMS_REF}",
+  "postgres": {
+    "host": "localhost",
+    "port": 5432
+  },
+  "dbPrefix": "cweval_09_0_",
+  "ports": {
+    "site": [
+      4564,
+      4565
+    ],
+    "backend": [
+      4566,
+      4567
+    ],
+    "reserved": [
+      3000,
+      3001,
+      3003,
+      3004,
+      3017,
+      3027,
+      3029
+    ]
+  },
+  "crm": {
+    "url": "http://127.0.0.1:4618",
+    "apiKeyFile": "./.fake-crm/api-key"
+  },
+  "subdomainBase": "realvista.cz",
+  "testMode": true
+}
