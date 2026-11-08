@@ -53,7 +53,8 @@ export const verify: Step = {
   phase: 'D',
   crmLogName: 'verify',
   outward: false,
-  dependsOn: ['site-start'],
+  // the revalidate round trip logs in as the realtor (checks.ts), so their login is an input
+  dependsOn: ['site-start', 'backend-seed-realtor'],
   fingerprint: () => fingerprintOf({ v: 1 }),
   probe: async () => ({ state: 'absent' }),
   async run(ctx) {
