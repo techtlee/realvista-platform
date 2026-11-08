@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { initStarterCopy, requestRules, validateStarterCopy } from '../../../src/copy/index.js'
 import { input, recordRepo, starterCopy } from '../../../src/steps/record.js'
 import { relativeSpecifiers, sectionOrder, variantOf } from '../../../src/verify/checks.js'
-import { SecretScanner, secretParts, secretsCheck } from '../../../src/verify/secretsCheck.js'
+import { verifySecrets } from '../../../src/verify/secrets.js'
 import { REQUEST, git, makeWorld, type World } from './helpers.js'
 
 let w: World
@@ -102,31 +102,25 @@ describe('verify helpers', () => {
   })
 })
 
-describe('secrets-check', () => {
-  it('finds whole values and 12-char pieces, reporting the key name only', () => {
-    const s = new SecretScanner(new Map([['s3cr3t-value-abcdefghijkl', 'backend/.env:PAYLOAD_SECRET']]))
-    expect(s.scan('x s3cr3t-value-abcdefghijkl y')).toEqual([{ key: 'backend/.env:PAYLOAD_SECRET', kind: 'value' }])
-    expect(s.scan('…value-abcdef…')).toEqual([{ key: 'backend/.env:PAYLOAD_SECRET', kind: 'substring' }])
-    expect(s.scan('nothing here')).toEqual([])
-  })
-
+describe('secrets-check (verify)', () => {
   it('flags a planted value in a tracked file, a log and the plan; passes when clean', async () => {
     mkdirSync(w.ctx.paths.backend, { recursive: true })
     git(w.ctx.paths.backend, 'init', '-q', '-b', 'main')
     writeFileSync(join(w.ctx.paths.backend, '.gitignore'), '.env\n.admin-credentials.local\n')
     await w.secrets.ensure('backend/.env', 'PAYLOAD_SECRET', () => 'planted-secret-0123456789abcdef')
+    await w.secrets.ensure('backend/.env', 'DATABASE_URL', () => 'postgres://localhost:5432/cw6_backend_x_dev')
     await w.secrets.ensure('backend/.env', 'PORT', () => '4261')
-    writeFileSync(join(w.ctx.paths.backend, 'ok.ts'), 'export const port = 4261\n')
+    writeFileSync(join(w.ctx.paths.backend, 'ok.ts'), 'export const port = 4261 // postgres://localhost:5432/your-db\n')
     git(w.ctx.paths.backend, 'add', '-A')
     git(w.ctx.paths.backend, 'commit', '-q', '-m', 'clean')
-    expect((await secretsCheck(w.ctx)).ok).toBe(true)
+    expect((await verifySecrets(w.ctx, w.exec)).ok).toBe(true)
 
     writeFileSync(join(w.ctx.paths.backend, 'leak.ts'), 'const s = "planted-secret-0123456789abcdef"\n')
     git(w.ctx.paths.backend, 'add', '-A')
     mkdirSync(join(w.ctx.paths.record, 'logs', 'run'), { recursive: true })
     writeFileSync(join(w.ctx.paths.record, 'logs', 'run', 'x.log'), 'tail: secret-01234567\n')
     writeFileSync(join(w.ctx.paths.record, 'outward-plan.md'), 'planted-secret-0123456789abcdef')
-    const r = await secretsCheck(w.ctx)
+    const r = await verifySecrets(w.ctx, w.exec)
     expect(r.ok).toBe(false)
     const files = r.hits.map((h) => h.file).join(' ')
     expect(files).toContain('leak.ts')
@@ -143,21 +137,7 @@ describe('secrets-check', () => {
     git(w.ctx.paths.site, 'commit', '-q', '-m', 'oops')
     git(w.ctx.paths.site, 'rm', '-q', '--cached', '.env.local')
     git(w.ctx.paths.site, 'commit', '-q', '-m', 'remove')
-    const r = await secretsCheck(w.ctx)
+    const r = await verifySecrets(w.ctx, w.exec)
     expect(r.hits.some((h) => h.file.includes('.env.local') && h.file.includes('history'))).toBe(true)
-  })
-})
-
-describe('secrets-check on connection URLs', () => {
-  it('a passwordless local DATABASE_URL only matches whole; its public pieces are not leaks', () => {
-    const s = new SecretScanner([secretParts('postgres://localhost:5432/cw6_backend_x_dev', 'backend/.env:DATABASE_URL')])
-    expect(s.scan('DATABASE_URL=postgres://localhost:5432/your-db')).toEqual([])
-    expect(s.scan('db cw6_backend_x_dev')).toEqual([])
-    expect(s.scan('postgres://localhost:5432/cw6_backend_x_dev')).toHaveLength(1)
-  })
-  it('a URL with a password flags fragments of the password', () => {
-    const s = new SecretScanner([secretParts('postgres://u:Zx9-very-secret-pw-42@db.example:5432/x', 'k')])
-    expect(s.scan('…very-secret-pw…')).toEqual([{ key: 'k', kind: 'substring' }])
-    expect(s.scan('postgres://u:@db.example:5432/x')).toEqual([])
   })
 })

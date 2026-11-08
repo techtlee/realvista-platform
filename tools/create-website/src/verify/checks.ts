@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path'
 import { backendQueryFactory, countRows } from '../backend/db.js'
 import { siteConfigInputFor } from '../site/index.js'
 import type { Ctx, VerifyCheck } from '../types.js'
-import { secretsCheck } from './secretsCheck.js'
+import { verifySecrets } from './secrets.js'
 
 export type Check = (ctx: Ctx) => Promise<Omit<VerifyCheck, 'check'>>
 
@@ -197,7 +197,7 @@ export const CHECKS: Record<string, Check> = {
   },
 
   async 'secrets-check'(ctx) {
-    const r = await secretsCheck(ctx)
+    const r = await verifySecrets(ctx)
     return r.ok
       ? ok(`${r.scannedFiles} files scanned, ${r.secretsKnown} secrets known, 0 hits`)
       : fail(r.hits.slice(0, 10).map((h) => `${h.file} (${h.key}, ${h.kind})`).join('; '))
