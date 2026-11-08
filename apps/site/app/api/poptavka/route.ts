@@ -1,5 +1,6 @@
 import type { EnquiryInput } from '@makleri/core/content'
 
+import site from '../../../site.config'
 import { cms } from '../../cms'
 
 /**
@@ -71,7 +72,13 @@ export async function POST(req: Request) {
 
   const settings = await cms.getSiteSettings().catch(() => null)
 
-  const input: EnquiryInput = {
+  // `tenant` is not part of EnquiryInput, but the CMS rejects an enquiry
+  // without one: the multi-tenant plugin stamps it from the admin's tenant
+  // cookie, which an API-key request does not carry. `submitEnquiry` spreads
+  // the input into the body, so it passes through. Remove once core's client
+  // sends its own tenantId (requested from the core owner).
+  const input: EnquiryInput & { tenant: number | string } = {
+    tenant: site.cms.tenantId,
     name,
     email,
     phone,
