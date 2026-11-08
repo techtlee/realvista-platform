@@ -92,8 +92,16 @@ describe('danglingLinks', () => {
     ])
   })
 
-  it('covers exactly the five routes the contract guarantees', () => {
-    expect(CONTRACT_ROUTES).toHaveLength(5)
+  it('covers exactly the five page routes plus the two legal pages', () => {
+    expect([...CONTRACT_ROUTES]).toEqual([
+      '/',
+      '/nemovitosti',
+      '/nemovitosti/:slug',
+      '/blog',
+      '/blog/:slug',
+      '/zasady-ochrany-osobnich-udaju',
+      '/cookies',
+    ])
   })
 })
 
