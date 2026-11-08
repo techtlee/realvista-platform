@@ -12,7 +12,7 @@ Workflow:
 cw copy init <slug> --json        # writes the tone default if the file is absent
 # edit clients/<slug>/starter-copy.json with the Edit tool
 cw copy validate <slug> --json    # schema + the rules below that a machine can check
-cw run --slug <slug> --json       # reseeds content only; logins and the site key are kept
+cw run <slug> --json             # reseeds content only; logins and the site key are kept
 ```
 
 `cw copy validate` fails (exit 2, `INVALID_STARTER_COPY`) with a list of paths.

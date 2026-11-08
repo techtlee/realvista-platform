@@ -137,7 +137,7 @@ anything. Use it (with `--outward`) when Josef asks "what would you do" or
 ### 4. Run
 
 ```sh
-$CW run <input> --json            # first run; on a resume `cw run --slug <slug> --json` is enough
+$CW run <input> --json            # first run; on a resume `cw run <slug> --json` is enough
 ```
 
 `cw run` is resumable by design: it skips every step whose probe says it is
@@ -173,7 +173,7 @@ stay `[NÁVRH – před spuštěním nahradit]`, and the city is the client's, n
 Plzeň by default. Then:
 
 ```sh
-$CW copy validate <slug> --json && $CW run --slug <slug> --json
+$CW copy validate <slug> --json && $CW run <slug> --json
 ```
 
 The re-run reseeds content only (users and the site key are untouched).

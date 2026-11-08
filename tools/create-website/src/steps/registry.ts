@@ -69,3 +69,9 @@ export function getStep(id: StepId): Step {
 }
 
 export { STEPS as registry }
+
+/** The CLI's loader contract (`createSteps()` or `steps`). */
+export const steps: Step[] = [...STEPS]
+export function createSteps(): Step[] {
+  return [...STEPS]
+}
