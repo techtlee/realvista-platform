@@ -22,6 +22,7 @@ import {
   danglingLinks,
   headerComesFirst,
   linksToBlog,
+  sectionOrder,
   strayTokens,
   tagCount,
   usesThemeInline,
@@ -292,6 +293,42 @@ export function runThemeConformance(theme: ThemeModule, options: ConformanceOpti
         const html = render(theme, 'Home', props.Home)
         expect(tagCount(html, 'header'), '<header> count').toBe(1)
         expect(headerComesFirst(html), 'header is not first').toBe(true)
+      })
+
+      // The rendered order must be machine-readable: /create-website's verify
+      // step compares `[data-section]` on the live site with the config, and a
+      // theme that drops the markers makes that check pass vacuously.
+      describe('marks home sections with data-section, in the configured order', () => {
+        // Sections the theme implements. The full fixture fills every field, so
+        // each of them renders; a theme without a manifest list is held to the
+        // fixture's own order.
+        const implemented = manifest.sections?.home ?? homeSections(fixture.site)
+        const homeIn = (order: string[]) =>
+          render(theme, 'Home', withSite((site) => ({
+            ...site,
+            features: { ...site.features, blog: true },
+            pages: { ...site.pages, home: { sections: order } },
+          })).Home)
+
+        it('in the order the config gives', () => {
+          const order = [...implemented]
+          expect(sectionOrder(homeIn(order))).toEqual(order)
+        })
+
+        it('in reverse, when the config reverses it', () => {
+          const order = [...implemented].reverse()
+          expect(sectionOrder(homeIn(order))).toEqual(order)
+        })
+
+        it('only the sections the config asks for, once each', () => {
+          const order = [implemented.at(-1), implemented[0]].filter((s): s is string => !!s)
+          expect(sectionOrder(homeIn(order))).toEqual(order)
+        })
+
+        it('no marker for a section id the theme does not implement', () => {
+          const order = [implemented[0] ?? 'hero', 'not-a-section']
+          expect(sectionOrder(homeIn(order))).toEqual(order.slice(0, 1))
+        })
       })
     })
 
