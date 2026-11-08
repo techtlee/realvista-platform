@@ -1,0 +1,56 @@
+{
+  "requestVersion": 1,
+  "slug": "horak-reality",
+  "contact": {
+    "name": "Martin Horák",
+    "email": "martin@horak-reality.example"
+  },
+  "company": {
+    "city": "Ostrava"
+  },
+  "provisioning": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-11-08T09:00:00.000Z",
+    "theme": {
+      "name": "realvista",
+      "variant": "clay"
+    },
+    "modules": {
+      "blog": true,
+      "services": true,
+      "listingMap": true,
+      "mortgageCalculator": true,
+      "references": false
+    },
+    "sections": {
+      "home": [
+        "hero",
+        "featured",
+        "services",
+        "agent",
+        "stats",
+        "contact",
+        "blog"
+      ]
+    },
+    "brand": {
+      "name": "Horák Reality",
+      "tagline": "Reality v Ostravě a okolí"
+    },
+    "content": {
+      "tone": "formal",
+      "locale": "cs-CZ"
+    },
+    "domain": {
+      "situation": "none",
+      "emailOnDomain": "no"
+    },
+    "plan": {
+      "tier": "standard",
+      "billingPeriod": "yearly"
+    },
+    "source": {
+      "page": "/"
+    }
+  }
+}

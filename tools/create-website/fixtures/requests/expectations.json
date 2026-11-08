@@ -1,0 +1,150 @@
+{
+  "$comment": "What each fixture must do under `cw validate` (provisioningRequestSchema, then createProvisioningSchema(catalog)). Owned by WP7; verified against cw/1-platform-prereqs 13a856a. issuePath is the zod issue path joined with '.'.",
+  "svoboda-friendly-indigo.request.json": {
+    "valid": true,
+    "slug": "svoboda-reality",
+    "expectedHomeSections": [
+      "hero",
+      "featured",
+      "agent",
+      "stats",
+      "contact",
+      "blog"
+    ],
+    "variant": "indigo",
+    "note": "services off: the section is dropped; no domain (situation none)"
+  },
+  "svoboda-friendly-indigo.provisioning.json": {
+    "valid": true,
+    "bare": true,
+    "flags": [
+      "--slug",
+      "svoboda-reality",
+      "--contact-name",
+      "Petra Svobodová",
+      "--contact-email",
+      "petra@svoboda-reality.example"
+    ],
+    "sameShaAs": "svoboda-bare-equivalent.request.json",
+    "note": "bare JSON + the flags must build exactly svoboda-bare-equivalent.request.json (same requestSha256)"
+  },
+  "svoboda-lead.request.json": {
+    "valid": true,
+    "slug": "svoboda-reality",
+    "crm": {
+      "leadId": 21,
+      "siteId": 9
+    },
+    "note": "served by the fake CRM as lead 21 in e2e"
+  },
+  "novak-test.request.json": {
+    "valid": true,
+    "slug": "novak-test",
+    "variant": "clay",
+    "expectedHomeSections": [
+      "hero",
+      "agent",
+      "featured",
+      "stats",
+      "services",
+      "blog",
+      "contact"
+    ],
+    "note": "client #1; the golden diff target"
+  },
+  "kral-friendly.request.json": {
+    "valid": true,
+    "slug": "kralova-reality",
+    "city": "Brno",
+    "variant": "crimson"
+  },
+  "crm-lead-12.request.json": {
+    "valid": true,
+    "slug": "cerna-reality",
+    "crm": {
+      "leadId": 12,
+      "siteId": 7
+    }
+  },
+  "novak2.request.json": {
+    "valid": true,
+    "slug": "novak-test",
+    "note": "valid on its own; collides with an existing novak-test from another request"
+  },
+  "horak.request.json": {
+    "valid": true,
+    "slug": "horak-reality"
+  },
+  "purple.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "provisioning.theme.variant",
+    "messageIncludes": [
+      "purple",
+      "indigo",
+      "crimson",
+      "clay",
+      "mono"
+    ]
+  },
+  "missing-domain.provisioning.json": {
+    "valid": false,
+    "bare": true,
+    "exit": 2,
+    "issuePath": "domain",
+    "flags": [
+      "--slug",
+      "dvorak-reality",
+      "--contact-name",
+      "Pavel Dvořák",
+      "--contact-email",
+      "pavel@dvorak-reality.example"
+    ]
+  },
+  "invalid/missing-domain.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "provisioning.domain"
+  },
+  "invalid/duplicate-section.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "provisioning.sections.home.2"
+  },
+  "invalid/unknown-section.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "provisioning.sections.home.1"
+  },
+  "invalid/bad-slug.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "slug"
+  },
+  "invalid/reserved-slug.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "slug",
+    "code": "RESERVED_SLUG"
+  },
+  "invalid/missing-contact.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "contact"
+  },
+  "invalid/unknown-key.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": ""
+  },
+  "invalid/domain-without-name.request.json": {
+    "valid": false,
+    "exit": 2,
+    "issuePath": "provisioning.domain.name"
+  },
+  "svoboda-bare-equivalent.request.json": {
+    "valid": true,
+    "slug": "svoboda-reality",
+    "note": "what the bare JSON + flags must produce"
+  }
+}

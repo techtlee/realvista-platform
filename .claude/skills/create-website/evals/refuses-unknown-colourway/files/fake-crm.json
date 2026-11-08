@@ -1,0 +1,239 @@
+{
+  "apiKey": "fake-crm-key-02",
+  "users": [
+    {
+      "email": "provisioner@realvista.test",
+      "password": "fake-crm-password"
+    }
+  ],
+  "leads": {
+    "12": {
+      "status": 200,
+      "body": {
+        "requestVersion": 1,
+        "slug": "cerna-reality",
+        "crm": {
+          "leadId": 12,
+          "siteId": 7
+        },
+        "contact": {
+          "name": "Alena Černá",
+          "email": "alena@cerna-reality.example"
+        },
+        "company": {
+          "name": "Černá Reality",
+          "city": "Praha"
+        },
+        "provisioning": {
+          "schemaVersion": 1,
+          "capturedAt": "2026-11-08T09:00:00.000Z",
+          "theme": {
+            "name": "realvista",
+            "variant": "indigo"
+          },
+          "modules": {
+            "blog": true,
+            "services": true,
+            "listingMap": true,
+            "mortgageCalculator": true,
+            "references": false
+          },
+          "sections": {
+            "home": [
+              "hero",
+              "featured",
+              "services",
+              "agent",
+              "stats",
+              "contact",
+              "blog"
+            ]
+          },
+          "brand": {
+            "name": "Černá Reality"
+          },
+          "content": {
+            "tone": "formal",
+            "locale": "cs-CZ"
+          },
+          "domain": {
+            "situation": "none",
+            "emailOnDomain": "no"
+          },
+          "plan": {
+            "tier": "standard",
+            "billingPeriod": "yearly"
+          },
+          "source": {
+            "page": "/"
+          }
+        }
+      }
+    },
+    "13": {
+      "status": 422,
+      "body": {
+        "missing": [
+          "plan.tier",
+          "domain.situation"
+        ]
+      }
+    },
+    "21": {
+      "status": 200,
+      "body": {
+        "requestVersion": 1,
+        "slug": "svoboda-reality",
+        "contact": {
+          "name": "Petra Svobodová",
+          "email": "petra@svoboda-reality.example",
+          "phone": "+420 601 222 333"
+        },
+        "company": {
+          "name": "Svoboda Reality s.r.o."
+        },
+        "provisioning": {
+          "schemaVersion": 1,
+          "capturedAt": "2026-11-08T09:00:00.000Z",
+          "theme": {
+            "name": "realvista",
+            "variant": "indigo"
+          },
+          "modules": {
+            "blog": true,
+            "services": false,
+            "listingMap": true,
+            "mortgageCalculator": true,
+            "references": false
+          },
+          "sections": {
+            "home": [
+              "hero",
+              "featured",
+              "services",
+              "agent",
+              "stats",
+              "contact",
+              "blog"
+            ]
+          },
+          "brand": {
+            "name": "Svoboda Reality",
+            "tagline": "Klidný prodej vašeho bytu"
+          },
+          "content": {
+            "tone": "friendly",
+            "locale": "cs-CZ"
+          },
+          "domain": {
+            "situation": "none",
+            "emailOnDomain": "no"
+          },
+          "plan": {
+            "tier": "standard",
+            "billingPeriod": "yearly"
+          },
+          "source": {
+            "page": "/"
+          }
+        },
+        "crm": {
+          "leadId": 21,
+          "siteId": 9
+        }
+      }
+    },
+    "31": {
+      "status": 200,
+      "body": {
+        "requestVersion": 1,
+        "slug": "novak-test",
+        "crm": {
+          "leadId": 31,
+          "siteId": 14
+        },
+        "contact": {
+          "name": "Tomáš Novák",
+          "email": "tomas@novak-syn.example",
+          "phone": "+420 603 777 888"
+        },
+        "company": {
+          "name": "Novák & syn Reality s.r.o.",
+          "city": "Olomouc"
+        },
+        "provisioning": {
+          "schemaVersion": 1,
+          "capturedAt": "2026-11-08T09:00:00.000Z",
+          "theme": {
+            "name": "realvista",
+            "variant": "mono"
+          },
+          "modules": {
+            "blog": true,
+            "services": true,
+            "listingMap": true,
+            "mortgageCalculator": true,
+            "references": false
+          },
+          "sections": {
+            "home": [
+              "hero",
+              "featured",
+              "services",
+              "agent",
+              "stats",
+              "contact",
+              "blog"
+            ]
+          },
+          "brand": {
+            "name": "Novák & syn Reality"
+          },
+          "content": {
+            "tone": "formal",
+            "locale": "cs-CZ"
+          },
+          "domain": {
+            "situation": "have-no-access",
+            "name": "novak-syn.cz",
+            "registrar": "wedos",
+            "emailOnDomain": "unknown"
+          },
+          "plan": {
+            "tier": "standard",
+            "billingPeriod": "yearly"
+          },
+          "source": {
+            "page": "/"
+          }
+        }
+      }
+    },
+    "40": {
+      "status": 409,
+      "body": {
+        "error": "This lead has no site record yet. Create the site in the CRM first."
+      }
+    }
+  },
+  "sites": {
+    "7": {
+      "id": 7,
+      "slug": "cerna-reality",
+      "status": "provisioning",
+      "lead": 12
+    },
+    "9": {
+      "id": 9,
+      "slug": "svoboda-reality",
+      "status": "provisioning",
+      "lead": 21
+    },
+    "14": {
+      "id": 14,
+      "slug": "novak-test",
+      "status": "provisioning",
+      "lead": 31
+    }
+  }
+}

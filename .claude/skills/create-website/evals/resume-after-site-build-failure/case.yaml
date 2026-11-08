@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: resume-after-site-build-failure
+expected_outcome: |
+  The scaffold left a real svoboda-reality run failed at site-build (before). Claude checks cw status first,
+  then resumes with cw run; the run completes with the same runId, credentials untouched (attempts 1, same file hash),
+  one tenant/realtor/key user, and nothing is torn down or started fresh.
+context:
+  scaffold_script: place-files.sh

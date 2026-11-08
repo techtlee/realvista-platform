@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: refuses-unknown-colourway
+expected_outcome: |
+  Validation fails on theme.variant: "purple" is not a colourway of realvista (indigo, crimson, clay, mono).
+  Nothing is created (no directories, no database). The reply explains this, lists the valid colourways, says the
+  fix belongs in the CRM (the lead's selection) and does not edit the JSON or provision with a substituted colour.
+context:
+  scaffold_script: place-files.sh

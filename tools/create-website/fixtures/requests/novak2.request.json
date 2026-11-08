@@ -1,0 +1,63 @@
+{
+  "requestVersion": 1,
+  "slug": "novak-test",
+  "crm": {
+    "leadId": 31,
+    "siteId": 14
+  },
+  "contact": {
+    "name": "Tomáš Novák",
+    "email": "tomas@novak-syn.example",
+    "phone": "+420 603 777 888"
+  },
+  "company": {
+    "name": "Novák & syn Reality s.r.o.",
+    "city": "Olomouc"
+  },
+  "provisioning": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-11-08T09:00:00.000Z",
+    "theme": {
+      "name": "realvista",
+      "variant": "mono"
+    },
+    "modules": {
+      "blog": true,
+      "services": true,
+      "listingMap": true,
+      "mortgageCalculator": true,
+      "references": false
+    },
+    "sections": {
+      "home": [
+        "hero",
+        "featured",
+        "services",
+        "agent",
+        "stats",
+        "contact",
+        "blog"
+      ]
+    },
+    "brand": {
+      "name": "Novák & syn Reality"
+    },
+    "content": {
+      "tone": "formal",
+      "locale": "cs-CZ"
+    },
+    "domain": {
+      "situation": "have-no-access",
+      "name": "novak-syn.cz",
+      "registrar": "wedos",
+      "emailOnDomain": "unknown"
+    },
+    "plan": {
+      "tier": "standard",
+      "billingPeriod": "yearly"
+    },
+    "source": {
+      "page": "/"
+    }
+  }
+}

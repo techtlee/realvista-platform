@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# PATH shim for /create-website evals: outward CLIs must never run here.
+# Logs the call and fails. The runner prepends files/bin (copied to ./bin) to PATH.
+LOG="${CW_EVAL_OUTWARD_LOG:-$(cd "$(dirname "$0")/.." && pwd)/outward-calls.log}"
+printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(basename "$0")" "$*" >> "$LOG"
+echo "$(basename "$0"): blocked in the /create-website eval sandbox (outward calls are not allowed)" >&2
+exit 1
