@@ -11,11 +11,11 @@
  *   child output and the exec guard know it.
  */
 import { randomBytes } from 'node:crypto'
-import { closeSync, existsSync, fchmodSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, statSync, writeSync } from 'node:fs'
-import { basename, dirname, join } from 'node:path'
+import { closeSync, existsSync, fchmodSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeSync } from 'node:fs'
+import { basename, dirname, join, relative } from 'node:path'
 
 import { Redactor } from './redact.js'
-import { OUTWARD_ENABLED, OutwardDisabledError, type LocalSecretFileId, type SecretFileId, type SecretRef, type SecretStore } from './types.js'
+import { OUTWARD_ENABLED, OutwardDisabledError, type Exec, type LocalSecretFileId, type SecretFileId, type SecretRef, type SecretStore } from './types.js'
 
 export const SECRET_FILE_IDS: readonly LocalSecretFileId[] = [
   'backend/.env',
@@ -272,49 +272,163 @@ function assertKey(key: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// Leak scan (`cw secrets-check`, last check of `verify`)
+// Leak scan (`cw secrets-check` and the last check of `verify`: ONE
+// implementation, so the two can never disagree)
 
-export interface LeakHit {
-  file: string
-  /** which secret (file id + key NAME), never the value */
-  secret: string
-  match: 'full' | 'substring'
-}
+export const SUBSTRING_LEN = 12
+const MAX_SCAN_BYTES = 5 * 1024 * 1024
 
-/** Every 12-character window of a value; a partial leak still counts. */
-function windows(v: string, n = 12): string[] {
-  if (v.length <= n) return [v]
-  const out: string[] = []
-  for (let i = 0; i + n <= v.length; i++) out.push(v.slice(i, i + n))
-  return out
+/** One secret to look for. Values never leave the process; hits carry `key` only. */
+export interface KnownSecret {
+  value: string
+  /** `file:KEY` or `(registered)` — what a hit reports */
+  key: string
+  /** match the whole value (false for a URL whose only secret is absent) */
+  matchWhole: boolean
+  /** the part whose 12-character pieces count as a leak; null = none */
+  pieces: string | null
 }
 
 /**
- * Scans `files` (contents) for the named secret values, full or any
- * 12-character substring. Pure: the caller decides which files (tracked
- * files of the three repos, logs/, the state file, outward-plan.*).
+ * What of a value is secret. A connection URL is mostly public (scheme, host,
+ * port and DB name appear in .env.example, the state and the README); only
+ * its password is secret. A password-less local URL
+ * (`postgres://localhost:5432/backend_x_dev`) therefore holds nothing to
+ * leak; a URL with a password is matched whole, and pieces come from the
+ * password only.
  */
-export function scanForLeaks(files: Array<{ path: string; content: string }>, secrets: Array<{ name: string; value: string }>): LeakHit[] {
-  const hits: LeakHit[] = []
-  const usable = secrets.filter((s) => s.value.length >= 8)
-  for (const f of files) {
-    for (const s of usable) {
-      if (f.content.includes(s.value)) hits.push({ file: f.path, secret: s.name, match: 'full' })
-      else if (s.value.length > 12 && windows(s.value).some((w) => f.content.includes(w))) hits.push({ file: f.path, secret: s.name, match: 'substring' })
+export function secretParts(value: string, key: string): KnownSecret | null {
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+    try {
+      const u = new URL(value)
+      const pw = decodeURIComponent(u.password)
+      if (pw.length < MIN_SECRET_VALUE) return null
+      return { value, key, matchWhole: true, pieces: pw.length >= SUBSTRING_LEN ? pw : null }
+    } catch {
+      /* not a URL after all */
     }
   }
-  return hits
+  if (value.length < MIN_SECRET_VALUE) return null
+  return { value, key, matchWhole: true, pieces: value.length > SUBSTRING_LEN ? value : null }
 }
 
-/** All secret-classified values in the three secret files, named `file:KEY`. */
-export function namedSecrets(store: FileSecretStore): Array<{ name: string; value: string }> {
-  const out: Array<{ name: string; value: string }> = []
+const MIN_SECRET_VALUE = 8
+
+export interface SecretHit {
+  /** path relative to clientsDir */
+  file: string
+  key: string
+  kind: 'value' | 'substring'
+}
+
+export class SecretScanner {
+  private readonly whole: Array<[string, string]> = []
+  private readonly pieces = new Map<string, string>()
+
+  constructor(secrets: KnownSecret[]) {
+    for (const s of secrets) {
+      if (s.matchWhole) this.whole.push([s.value, s.key])
+      if (!s.pieces) continue
+      for (let i = 0; i + SUBSTRING_LEN <= s.pieces.length; i++) this.pieces.set(s.pieces.slice(i, i + SUBSTRING_LEN), s.key)
+    }
+  }
+
+  get size(): number {
+    return this.whole.length + this.pieces.size
+  }
+
+  /** At most one hit per secret per text: the whole value if present, else a piece. */
+  scan(text: string): Array<{ key: string; kind: 'value' | 'substring' }> {
+    const hits = new Map<string, 'value' | 'substring'>()
+    for (const [v, key] of this.whole) if (text.includes(v)) hits.set(key, 'value')
+    if (this.pieces.size) {
+      for (let i = 0; i + SUBSTRING_LEN <= text.length; i++) {
+        const key = this.pieces.get(text.slice(i, i + SUBSTRING_LEN))
+        if (key && !hits.has(key)) hits.set(key, 'substring')
+      }
+    }
+    return [...hits].map(([key, kind]) => ({ key, kind }))
+  }
+}
+
+/** Pure: scan given contents. */
+export function scanForLeaks(files: Array<{ path: string; content: string }>, secrets: KnownSecret[]): SecretHit[] {
+  const scanner = new SecretScanner(secrets)
+  return files.flatMap((f) => scanner.scan(f.content).map((h) => ({ file: f.path, ...h })))
+}
+
+/**
+ * Secret-classified values from the three local secret files, plus every
+ * value registered with the store's Redactor (e.g. a minted key), as
+ * KnownSecrets. Production files are skipped while outward is disabled.
+ */
+export function knownSecrets(store: FileSecretStore): KnownSecret[] {
+  const out = new Map<string, KnownSecret | null>()
   for (const f of SECRET_FILE_IDS) {
     const p = store.pathOf(f)
     if (!existsSync(p)) continue
     for (const l of parseDotenv(readFileSync(p, 'utf8'))) {
-      if (l.key !== undefined && l.value && isSecretFileKey(l.key)) out.push({ name: `${f}:${l.key}`, value: l.value })
+      if (l.key !== undefined && l.value && isSecretFileKey(l.key) && !out.has(l.value)) out.set(l.value, secretParts(l.value, `${f}:${l.key}`))
     }
   }
+  for (const v of store.knownValues()) if (!out.has(v)) out.set(v, secretParts(v, '(registered)'))
+  return [...out.values()].filter((x): x is KnownSecret => x !== null)
+}
+
+export interface SecretsCheckResult {
+  ok: boolean
+  scannedFiles: number
+  secretsKnown: number
+  hits: SecretHit[]
+}
+
+function walkFiles(dir: string, out: string[] = []): string[] {
+  if (!existsSync(dir)) return out
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) walkFiles(p, out)
+    else if (e.isFile()) out.push(p)
+  }
   return out
+}
+
+/**
+ * The whole check: git-tracked files of the record, backend and site repos,
+ * `logs/`, the state file and `outward-plan.*`. Used by `cw secrets-check`
+ * and by the `verify` step. `exec` should carry an EMPTY redactor, or the
+ * git output it reads would itself be redacted.
+ */
+export async function runSecretsCheck(o: {
+  exec: Pick<Exec, 'run'>
+  store: FileSecretStore
+  paths: { record: string; backend: string; site: string }
+  clientsDir: string
+}): Promise<SecretsCheckResult> {
+  const files = new Set<string>()
+  for (const repo of [o.paths.record, o.paths.backend, o.paths.site]) {
+    if (!existsSync(join(repo, '.git'))) continue
+    const r = await o.exec.run(['git', 'ls-files', '-z'], { cwd: repo, allowFailure: true })
+    if (r.code !== 0) continue
+    for (const f of r.stdout.split('\0').filter(Boolean)) files.add(join(repo, f))
+  }
+  for (const f of walkFiles(join(o.paths.record, 'logs'))) files.add(f)
+  for (const f of ['create-website.state.json', 'outward-plan.md', 'outward-plan.json']) {
+    if (existsSync(join(o.paths.record, f))) files.add(join(o.paths.record, f))
+  }
+  const secrets = knownSecrets(o.store)
+  const scanner = new SecretScanner(secrets)
+  const hits: SecretHit[] = []
+  let scannedFiles = 0
+  for (const f of files) {
+    let content: string
+    try {
+      if (statSync(f).size > MAX_SCAN_BYTES) continue
+      content = readFileSync(f, 'utf8')
+    } catch {
+      continue // vanished / unreadable
+    }
+    scannedFiles++
+    for (const h of scanner.scan(content)) hits.push({ file: relative(o.clientsDir, f), ...h })
+  }
+  return { ok: hits.length === 0, scannedFiles, secretsKnown: secrets.length, hits }
 }

@@ -5,8 +5,8 @@
  * 0 ok, 2 invalid input, 3 conflict, 4 precondition, 5 step failed
  * (resumable), 6 locked, 7 outward refused.
  */
-import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
-import { join, relative, resolve, sep } from 'node:path'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
@@ -26,7 +26,7 @@ import { allocatePorts, readRegistry, releasePorts } from './ports.js'
 import { NodeProcessManager } from './procs/manager.js'
 import { Redactor } from './redact.js'
 import { nextStep, runSteps, topoSort, type RunReport } from './runner.js'
-import { FileSecretStore, namedSecrets, scanForLeaks, type LeakHit } from './secrets.js'
+import { FileSecretStore, runSecretsCheck } from './secrets.js'
 import { FileStateStore, MemoryStateStore, statePath } from './state/store.js'
 import { newRunId } from './state/runId.js'
 import { createTestHooks } from './testHooks.js'
@@ -634,54 +634,17 @@ async function cmdCopy(sub: string | undefined, slug: string, io: Io, cfg: Confi
   return { code: EXIT.OK, out: { ok: true, slug, ...out } }
 }
 
-function walk(dir: string, out: string[] = []): string[] {
-  if (!existsSync(dir)) return out
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name)
-    if (e.isDirectory()) walk(p, out)
-    else if (e.isFile()) out.push(p)
-  }
-  return out
-}
-
-export async function secretsCheck(cfg: Config, slug: string, exec: NodeExec, secrets: FileSecretStore): Promise<{ ok: boolean; scanned: number; hits: LeakHit[] }> {
-  const paths = clientPaths(cfg, slug)
-  const files = new Set<string>()
-  for (const repo of [paths.record, paths.backend, paths.site]) {
-    if (!existsSync(join(repo, '.git'))) continue
-    const r = await exec.run(['git', 'ls-files', '-z'], { cwd: repo, allowFailure: true })
-    for (const f of r.stdout.split('\0').filter(Boolean)) files.add(join(repo, f))
-  }
-  for (const f of walk(join(paths.record, 'logs'))) files.add(f)
-  for (const f of ['create-website.state.json', 'outward-plan.md', 'outward-plan.json']) {
-    if (existsSync(join(paths.record, f))) files.add(join(paths.record, f))
-  }
-  const contents: Array<{ path: string; content: string }> = []
-  for (const f of files) {
-    try {
-      if (statSync(f).size > 5_000_000) continue
-      contents.push({ path: relative(cfg.clientsDir, f), content: readFileSync(f, 'utf8') })
-    } catch {
-      /* unreadable / vanished */
-    }
-  }
-  const hits = scanForLeaks(contents, namedSecrets(secrets))
-  return { ok: hits.length === 0, scanned: contents.length, hits }
-}
-
 async function cmdSecretsCheck(slug: string, io: Io, cfg: Config) {
   const paths = clientPaths(cfg, slug)
   const rt = runtime(cfg, paths, io, undefined)
   // the scanner itself must be able to read raw git output: a fresh, empty redactor for its git calls
   const exec = new NodeExec({ redactor: new Redactor() })
-  const r = await secretsCheck(cfg, slug, exec, rt.secrets)
+  const r = await runSecretsCheck({ exec, store: rt.secrets, paths, clientsDir: cfg.clientsDir })
   return {
     code: r.ok ? EXIT.OK : EXIT.STEP_FAILED,
     out: {
-      ok: r.ok,
       slug,
-      scanned: r.scanned,
-      hits: r.hits as unknown as Json,
+      ...(r as unknown as Record<string, Json>),
       ...(r.ok ? {} : { code: 'STEP_FAILED', step: 'verify', message: `${r.hits.length} secret leak(s) found`, hint: 'Rotate the leaked secrets and purge them from history before anything is pushed.' }),
     } as Record<string, Json>,
   }

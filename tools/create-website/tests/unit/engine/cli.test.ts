@@ -160,7 +160,7 @@ describe('cw CLI', () => {
     writeFileSync(join(root, 'clients/svoboda-reality/logs/leak.log'), `oops ${pw.slice(3, 20)}\n`)
     const r = await cw(root, ['secrets-check', 'svoboda-reality'])
     expect(r.code).toBe(5)
-    expect(r.json.hits).toEqual([{ file: 'svoboda-reality/logs/leak.log', secret: 'backend/.admin-credentials.local:CLIENT_PASSWORD', match: 'substring' }])
+    expect(r.json.hits).toEqual([{ file: 'svoboda-reality/logs/leak.log', key: 'backend/.admin-credentials.local:CLIENT_PASSWORD', kind: 'substring' }])
     expect(r.out).not.toContain(pw)
   })
 
