@@ -23,7 +23,7 @@ export default defineSiteConfig(
       url: process.env.NEXT_PUBLIC_CMS_URL ?? 'http://localhost:3000',
       tenantId: Number(process.env.TENANT_ID ?? 5),
     },
-    features: { blog: true },
+    features: { blog: true, listingMap: true, mortgageCalculator: true },
     pages: {
       home: { sections: ['hero', 'featured', 'services', 'agent', 'stats', 'contact', 'blog'] },
     },
