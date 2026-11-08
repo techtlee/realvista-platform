@@ -11,7 +11,7 @@ import {
 } from '@makleri/core/format'
 import type { ReactNode } from 'react'
 
-import { ServiceGlyph } from '../icons.js'
+import { ArrowRightIcon, ServiceGlyph } from '../icons.js'
 
 export { PropertyMap, mapView, osmEmbedUrl } from './PropertyMap.js'
 // The component only: anything else exported from a 'use client' module becomes
@@ -277,7 +277,13 @@ export function Header({
   )
 }
 
-/** Shared contact block: 60px heading left, underlined form right. */
+/**
+ * Shared contact block: 60px heading left, underlined form right.
+ *
+ * The section owns the 150px above it and nothing below: what follows decides
+ * its own gap (the blog teaser, or the footer's 200px). Columns are 640 + 20 +
+ * 640, so the form starts on the canvas's centre line as drawn.
+ */
 export function ContactSection({
   settings,
   action = '/api/poptavka',
@@ -290,29 +296,37 @@ export function ContactSection({
   propertyId?: number | string
 }) {
   const c = settings?.contact
-  const line = 'w-full border-0 border-b border-muted bg-transparent pb-2 text-[16px] font-medium leading-[20px] text-brand outline-none placeholder:text-muted focus:border-brand'
+  const line =
+    'w-full border-0 border-b border-muted bg-transparent pb-[10px] text-[16px] font-medium leading-[20px] text-brand outline-none placeholder:text-muted focus:border-brand'
+  const label = 'mb-[10px] block text-[16px] font-medium leading-[20px] text-brand'
+  const box = 'h-[30px] w-[30px] shrink-0 rounded-btn border border-muted accent-[var(--rv-brand)]'
 
   return (
-    <section id="kontakt" className="py-[90px]">
-      <Container className="grid gap-16 lg:grid-cols-2">
+    <section id="kontakt" className="pt-[100px] lg:pt-[150px]">
+      <Container className="grid gap-16 lg:grid-cols-2 lg:gap-x-5">
         <div>
-          <h2 className="max-w-[504px] text-[60px] font-medium leading-[67px] text-brand">
+          <h2 className="max-w-[504px] text-[40px] font-medium leading-[45px] text-brand sm:text-[60px] sm:leading-[67px]">
             Máte zájem o naše služby?
           </h2>
-          <div className="mt-16 space-y-5">
-            {c?.email ? <p className="rv-track text-[16px] leading-[20px] text-brand">{c.email}</p> : null}
-            {c?.address ? (
-              <p className="rv-track whitespace-pre-line text-[16px] font-bold leading-[20px] text-brand">
-                {c.address}
-              </p>
-            ) : null}
-            {c?.phone ? <p className="rv-track text-[16px] leading-[20px] text-brand">{c.phone}</p> : null}
-          </div>
+          {c?.email ? (
+            <p className="rv-track mt-10 text-[16px] leading-[20px] text-brand lg:mt-[77px]">{c.email}</p>
+          ) : null}
+          {/* Address and phone read as one block, bottom-aligned with the consent row. */}
+          {c?.address || c?.phone ? (
+            <div className="mt-8 lg:mt-[107px]">
+              {c?.address ? (
+                <p className="rv-track whitespace-pre-line text-[16px] font-bold leading-[20px] text-brand">
+                  {c.address}
+                </p>
+              ) : null}
+              {c?.phone ? <p className="rv-track text-[16px] leading-[20px] text-brand">{c.phone}</p> : null}
+            </div>
+          ) : null}
         </div>
 
         <div>
           <h3 className="text-[30px] font-medium leading-[36px] text-brand">Pojďme se spojit</h3>
-          <form method="post" action={action} className="mt-12 space-y-10">
+          <form method="post" action={action} className="mt-[50px]">
             {propertyId != null ? (
               <input type="hidden" name="propertyId" value={String(propertyId)} />
             ) : null}
@@ -329,46 +343,44 @@ export function ContactSection({
               </label>
             </div>
 
-            <div className="grid gap-10 sm:grid-cols-2">
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">
-                  Jméno a příjmení
-                </span>
+            {/*
+              Name | e-mail, then the message, as drawn. The phone field is not
+              in the design; it is kept (optional, half width) because a realtor
+              calls back far more often than they write.
+            */}
+            <div className="grid gap-x-5 gap-y-10 sm:grid-cols-2">
+              <label className="block">
+                <span className={label}>Jméno a příjmení</span>
                 <input name="name" required placeholder="Vaše jméno" className={line} />
               </label>
               <label className="block">
-                <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">E-mail</span>
+                <span className={label}>E-mail</span>
                 <input name="email" type="email" placeholder="E-mail" className={line} />
               </label>
               <label className="block">
-                <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">Telefon</span>
+                <span className={label}>Telefon</span>
                 <input name="phone" type="tel" autoComplete="tel" placeholder="Nepovinné" className={line} />
               </label>
             </div>
 
-            <label className="block">
-              <span className="mb-2 block text-[16px] font-medium leading-[20px] text-brand">Zpráva</span>
-              <textarea name="message" rows={3} placeholder="Zde napište o co máte zájem" className={line} />
+            <label className="mt-10 block">
+              <span className={label}>Zpráva</span>
+              <textarea
+                name="message"
+                placeholder="Zde napište o co máte zájem"
+                className={`${line} block h-[100px] resize-none`}
+              />
             </label>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  name="consent"
-                  required
-                  className="mt-0.5 h-[30px] w-[30px] shrink-0 rounded-btn border border-muted accent-[var(--rv-brand)]"
-                />
+            <div className="mt-[18px] grid gap-5 sm:grid-cols-2">
+              <label className="flex items-center gap-[10px]">
+                <input type="checkbox" name="consent" required className={box} />
                 <span className="text-[12px] font-medium leading-[20px] text-brand">
                   {settings?.legal?.gdprConsentText ?? 'Souhlasím se zpracováním osobních údajů'}
                 </span>
               </label>
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  name="noNewsletter"
-                  className="mt-0.5 h-[30px] w-[30px] shrink-0 rounded-btn border border-muted accent-[var(--rv-brand)]"
-                />
+              <label className="flex items-center gap-[10px]">
+                <input type="checkbox" name="noNewsletter" className={box} />
                 <span className="text-[12px] font-medium leading-[20px] text-brand">
                   Nesouhlasím se zasíláním novinek
                 </span>
@@ -377,7 +389,7 @@ export function ContactSection({
 
             <button
               type="submit"
-              className="h-[50px] w-full rounded-btn bg-brand text-[16px] font-medium leading-[20px] text-white transition-opacity hover:opacity-90"
+              className="mt-10 h-[50px] w-full rounded-btn bg-brand text-[16px] font-medium leading-[20px] text-white transition-opacity hover:opacity-90"
             >
               Odeslat
             </button>
@@ -388,16 +400,24 @@ export function ContactSection({
   )
 }
 
+/**
+ * 650px band on the 1440 canvas: 150 above the wordmark, columns at
+ * 70 / 580 / 850 / 1080, the legal row 170 below the newsletter box and 100
+ * above the bottom edge. The footer owns the 200px gap above it, which is what
+ * the design leaves after the contact form on a listing page.
+ */
 export function Footer({ settings, site }: { settings: SiteSettings | null; site: SiteConfig }) {
   const c = settings?.contact
   const name = settings?.siteName ?? 'REALVISTA'
+  // One address line per row, at the same 36px rhythm as phone and e-mail.
+  const addressLines = (c?.address ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
 
   return (
-    <footer className="bg-brand pb-[60px] pt-[150px]">
-      <Container className="grid gap-12 lg:grid-cols-[420px_1fr_1fr_290px]">
-        <div>
+    <footer className="mt-[120px] bg-brand pb-[60px] pt-[100px] lg:mt-[200px] lg:pb-[100px] lg:pt-[150px]">
+      <Container className="grid gap-12 sm:grid-cols-2 xl:grid-cols-[510fr_270fr_230fr_290fr] xl:gap-0">
+        <div className="sm:col-span-2 xl:col-span-1">
           <p className="rv-track text-[46px] font-bold leading-[60px] text-white">{name}</p>
-          <p className="mt-2 max-w-[420px] text-[16px] leading-[24px] text-footer-ink">
+          <p className="max-w-[420px] text-[16px] leading-[24px] text-footer-ink">
             {settings?.hero?.subheadline ?? ''}
           </p>
         </div>
@@ -423,33 +443,35 @@ export function Footer({ settings, site }: { settings: SiteSettings | null; site
         <div>
           <p className="text-[18px] font-bold leading-[23px] text-white">Kancelář</p>
           <ul className="mt-4 space-y-4 text-[15px] leading-[20px] text-footer-ink">
-            {c?.address ? <li className="whitespace-pre-line">{c.address}</li> : null}
+            {addressLines.map((l) => (
+              <li key={l}>{l}</li>
+            ))}
             {c?.phone ? <li>{c.phone}</li> : null}
             {c?.email ? <li>{c.email}</li> : null}
           </ul>
         </div>
 
-        <div className="rounded-btn border border-white/10 bg-white/5 p-5">
+        <div className="rounded-btn border border-white/10 bg-white/5 px-[19px] pb-6 pt-[23px] xl:-mt-[10px] xl:h-[220px] xl:pb-0">
           <p className="text-[16px] font-bold leading-[21px] text-white">Odebírat novinky</p>
-          <p className="mt-2 text-[13px] leading-[18px] text-footer-ink">
+          <p className="mt-[5px] max-w-[250px] text-[13px] leading-[18px] text-footer-ink">
             Buďte první, kdo se dozví o nových prémiových nemovitostech.
           </p>
-          <div className="mt-6 flex h-[41px] items-center justify-between rounded-btn bg-white px-4">
+          <div className="mt-6 flex max-w-[250px] items-center justify-between gap-3 rounded-btn bg-white px-4 py-3">
             <input
               type="email"
-              placeholder="Váš e-mail…"
+              placeholder="Váš e-mail..."
               aria-label="Váš e-mail"
               className="w-full bg-transparent text-[13px] leading-[17px] text-brand outline-none placeholder:text-muted"
             />
-            <span aria-hidden className="text-[13px] font-bold text-brand">→</span>
+            <ArrowRightIcon className="shrink-0 text-brand" />
           </div>
         </div>
       </Container>
 
-      <Container className="mt-[120px] flex flex-wrap items-center justify-between gap-4">
+      <Container className="mt-16 flex flex-wrap items-center justify-between gap-4 xl:mt-[170px]">
         <p className="text-[15px] leading-[20px] text-footer-ink">
-          © {new Date().getFullYear()} {name}
-          {settings?.agent?.licenceNumber ? ` · Osvědčení č. ${settings.agent.licenceNumber}` : ''}
+          © {new Date().getFullYear()} {name}. Všechna práva vyhrazena.
+          {settings?.agent?.licenceNumber ? ` Osvědčení č. ${settings.agent.licenceNumber}` : ''}
         </p>
         <div className="flex gap-6">
           <a href="/zasady-ochrany-osobnich-udaju" className="text-[15px] leading-[20px] text-footer-ink hover:text-white">

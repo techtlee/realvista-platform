@@ -265,7 +265,7 @@ export function RealvistaListingIndex({ site, settings, listings, totalListings 
   return (
     <>
       <Header settings={settings} site={site} />
-      <Container className="py-[90px]">
+      <Container className="pt-[90px]">
         <h1 className="text-[30px] font-medium leading-[36px] text-brand">Nabídka nemovitostí</h1>
         <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
           {listingCount(totalListings)}
@@ -627,9 +627,7 @@ export function RealvistaPostDetail({ site, settings, post, recent }: PostDetail
         </Container>
       ) : null}
 
-      <div className="mt-[150px]">
-        <ContactSection settings={settings} />
-      </div>
+      <ContactSection settings={settings} />
 
       <Footer settings={settings} site={site} />
     </>
