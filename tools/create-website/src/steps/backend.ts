@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { countRows, tenantIdBySlug, userExists } from '../backend/db.js'
+import { backendQueryFactory, countRows, tenantIdBySlug, userExists } from '../backend/db.js'
 import { renderBackendReadme, renderDependabot } from '../backend/templates.js'
 import { dbName } from '../dbname.js'
 import type { Ctx, PlannedCommand, Probe, SecretRef, Step } from '../types.js'
@@ -316,18 +316,61 @@ export const backendMigrate: Step = {
   outward: false,
   dependsOn: ['backend-env', 'backend-install'],
   fingerprint: (ctx) => fingerprintOf({ cms: ctx.state.get().templates.cms?.commit }),
-  // Payload migrate is idempotent and cheap; re-running it is the probe.
-  probe: async () => ({ state: 'absent' }),
+  // Done when every migration file is recorded. Not "always re-run": once
+  // `next dev` has pushed the schema, `payload migrate` asks an interactive
+  // y/N question (a `dev` row, batch -1) and would hang a resume.
+  async probe(ctx) {
+    const files = migrationNames(ctx.paths.backend)
+    if (files.length === 0) return { state: 'absent' }
+    const applied = await appliedMigrations(ctx)
+    const pending = files.filter((f) => !applied.has(f))
+    if (pending.length === 0) return { state: 'done' }
+    return pending.length === files.length ? { state: 'absent' } : { state: 'partial', detail: `pending: ${pending.join(', ')}` }
+  },
   async run(ctx) {
-    await ctx.exec.run(['pnpm', 'migrate'], {
+    if ((await backendMigrate.probe(ctx)).state === 'done') return outputs({ pending: 0 })
+    const r = await ctx.exec.run(['pnpm', 'migrate'], {
       cwd: ctx.paths.backend,
       env: await backendScriptEnv(ctx),
+      // Answer Payload's dev-push prompt with its default (No) instead of hanging.
+      stdin: 'n\n',
       logFile: ctx.log.stepLog('backend-migrate'),
       timeoutMs: 10 * 60_000,
+      allowFailure: true,
     })
-    return {}
+    if (r.code !== 0 || (await backendMigrate.probe(ctx)).state !== 'done') {
+      const devPushed = /dev mode|pushed changes/i.test(r.stdout + r.stderr)
+      throw new CwError('STEP_FAILED', devPushed
+        ? 'new migrations, but this dev database was schema-pushed by `next dev`; payload migrate refuses without confirmation'
+        : `pnpm migrate failed (exit ${r.code})`, {
+        step: 'backend-migrate',
+        hint: devPushed
+          ? 'A template update brought a migration onto a dev-pushed DB. Ask Josef: run `pnpm migrate` by hand in the backend and confirm, or tear down and re-provision.'
+          : 'See the step log; is Postgres up?',
+      })
+    }
+    return outputs({ pending: 0 })
   },
   plan: noPlan,
+}
+
+/** Migration names as Payload records them: file names under src/migrations without extension. */
+export function migrationNames(backendDir: string): string[] {
+  const dir = join(backendDir, 'src', 'migrations')
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.ts') && f !== 'index.ts')
+    .map((f) => f.replace(/\.ts$/, ''))
+    .sort()
+}
+
+async function appliedMigrations(ctx: Ctx): Promise<Set<string>> {
+  try {
+    const rows = await backendQueryFactory(ctx)('select name from payload_migrations where batch > 0', [])
+    return new Set(rows.map((r) => String(r.name)))
+  } catch {
+    return new Set()
+  }
 }
 
 export const backendSeedAdmin: Step = {

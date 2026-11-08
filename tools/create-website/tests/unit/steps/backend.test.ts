@@ -12,6 +12,7 @@ import {
   backendDb,
   backendDbName,
   backendEnv,
+  backendMigrate,
   backendSeedContent,
   backendStart,
   readSiteKeyFile,
@@ -241,5 +242,32 @@ describe('site-key', () => {
     expect(readSiteKeyFile(p)).toBe('abc-123')
     writeFileSync(p, 'abc-456\n')
     expect(readSiteKeyFile(p)).toBe('abc-456')
+  })
+})
+
+describe('backend-migrate', () => {
+  const addMigrations = (...names: string[]) => {
+    const dir = join(w.ctx.paths.backend, 'src', 'migrations')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'index.ts'), 'export const migrations = []\n')
+    for (const n of names) writeFileSync(join(dir, `${n}.ts`), '')
+  }
+
+  it('is done when every migration file is recorded (dev-push rows ignored), so a resume never re-prompts', async () => {
+    addMigrations('20261108_100819_baseline')
+    setBackendQueryFactory(() => async () => [{ name: '20261108_100819_baseline' }])
+    expect((await backendMigrate.probe(w.ctx)).state).toBe('done')
+    await backendMigrate.run(w.ctx)
+    expect(w.exec.ran((a) => a[1] === 'migrate')).toHaveLength(0)
+  })
+
+  it('a new template migration is partial; the run answers the dev-push prompt with No and fails clearly', async () => {
+    await backendCopy.run(w.ctx)
+    await backendEnv.run(w.ctx)
+    addMigrations('20261108_100819_baseline', '20261201_000000_new')
+    setBackendQueryFactory(() => async () => [{ name: '20261108_100819_baseline' }])
+    expect((await backendMigrate.probe(w.ctx)).state).toBe('partial')
+    w.exec.handlers.push((argv) => (argv.join(' ') === 'pnpm migrate' ? { code: 1, stdout: 'It looks like you have run Payload in dev mode', stderr: '' } : undefined))
+    await expect(backendMigrate.run(w.ctx)).rejects.toThrow(/schema-pushed/)
   })
 })
