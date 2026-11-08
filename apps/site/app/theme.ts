@@ -8,3 +8,10 @@
  * you had got them all.
  */
 export { default } from '@makleri/theme-realvista'
+
+/**
+ * The layout's chrome, for the site's own pages that the theme contract does
+ * not cover (legal texts, the enquiry thank-you page). Re-exported here so the
+ * layout is still named in this one file only.
+ */
+export { Container, Footer, Header, RichText } from '@makleri/theme-realvista'
