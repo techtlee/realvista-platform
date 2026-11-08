@@ -9,7 +9,7 @@
  * codes, exit codes, the outward kill switch), so importing it never pulls
  * in fs/pg/child_process.
  */
-import type { ProvisioningJson } from '@makleri/selection'
+import type { ProvisioningRequest } from '@makleri/selection'
 
 // ---------------------------------------------------------------------------
 // Basics
@@ -275,19 +275,8 @@ export interface Step {
 // ---------------------------------------------------------------------------
 // Input (A1)
 
-/**
- * `provisioningRequestSchema` v1 (P3, `@makleri/selection`). Structural copy
- * so this file compiles before WP1 lands; `src/input` validates with the real
- * schema.
- */
-export interface ProvisioningRequest {
-  requestVersion: 1
-  slug: string
-  crm?: { leadId: number; siteId: number; url?: string }
-  contact: { name: string; email: string; phone?: string }
-  company?: { name?: string; ico?: string; city?: string }
-  provisioning: ProvisioningJson
-}
+/** `provisioningRequestSchema` v1 (P3), the parsed envelope. */
+export type { ProvisioningRequest }
 
 export type InputSource = 'file' | 'crm' | 'bare-json'
 

@@ -103,7 +103,7 @@ export function validateRequest(raw: unknown): { ok: true; value: ValidInput } |
       issues: r.error.issues.map((i) => ({ path: i.path.map(String).join('.') || '(root)', message: i.message })),
     }
   }
-  const request = r.data as unknown as ProvisioningRequest
+  const request: ProvisioningRequest = r.data
   return {
     ok: true,
     value: {
