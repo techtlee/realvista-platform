@@ -219,13 +219,41 @@ export function Header({
         <a href="/" className={`rv-track text-[16px] leading-[20px] ${ink}`}>
           {settings?.siteName ?? 'Realvista'}
         </a>
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Hlavní navigace" className="hidden items-center gap-8 md:flex">
           {nav.map((n) => (
             <a key={n.href} href={n.href} className={`rv-track text-[16px] leading-[20px] ${ink} hover:opacity-70`}>
               {n.label}
             </a>
           ))}
         </nav>
+
+        {/*
+          Below md the nav above is hidden, and a phone visitor used to get
+          nothing in its place. <details> opens and closes without JavaScript,
+          so the header stays a Server Component and works before hydration.
+        */}
+        <details className="group md:hidden">
+          <summary
+            aria-label="Menu"
+            className={`grid h-10 w-10 cursor-pointer list-none place-items-center ${ink} [&::-webkit-details-marker]:hidden`}
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+              <path className="group-open:hidden" d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" />
+              <path className="hidden group-open:block" d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </summary>
+          <nav aria-label="Menu" className="absolute inset-x-0 top-[60px] bg-card shadow-card">
+            {nav.map((n) => (
+              <a
+                key={n.href}
+                href={n.href}
+                className="rv-track block border-b border-accent px-5 py-4 text-[16px] leading-[20px] text-brand sm:px-8"
+              >
+                {n.label}
+              </a>
+            ))}
+          </nav>
+        </details>
       </Container>
     </header>
   )
