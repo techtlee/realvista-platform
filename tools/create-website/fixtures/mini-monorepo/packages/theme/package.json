@@ -1,0 +1,13 @@
+{
+  "name": "@makleri/theme",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./components": { "types": "./dist/components/index.d.ts", "import": "./dist/components/index.js" },
+    "./styles/theme.css": "./styles/theme.css",
+    "./fixtures": { "types": "./dist/fixtures/index.d.ts", "import": "./dist/fixtures/index.js" }
+  },
+  "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "devDependencies": { "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "react-dom": "^19.0.0" }
+}
