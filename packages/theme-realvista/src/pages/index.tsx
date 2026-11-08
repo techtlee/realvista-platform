@@ -30,10 +30,12 @@ import {
   GhostButton,
   Header,
   MorePropertiesCard,
+  MortgageCalculator,
   OutlineButton,
   PageHeading,
   PostCard,
   PropertyCard,
+  PropertyMap,
   RegionChip,
   RichText,
   ServicesSection,
@@ -282,6 +284,15 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
   const [main, ...rest] = gallery
   const agent = settings?.agent
   const perM2 = pricePerSquareMetre(property)
+  // Sales with a stated price only: a payment derived from a monthly rent, or
+  // from "Cena na vyžádání", would be a number with no meaning.
+  const calculatorPrice =
+    site.features.mortgageCalculator &&
+    property.transactionType !== 'pronajem' &&
+    !property.price?.onRequest &&
+    property.price?.amount
+      ? property.price.amount
+      : undefined
 
   const params: [string, string | undefined][] = [
     ['Dispozice', dispositionLabel(property.disposition)],
@@ -424,50 +435,53 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
           ) : null}
         </div>
 
-        {agent ? (
-          <aside className="h-fit rounded-btn bg-card p-[40px] shadow-card">
-            <p className="text-center text-[30px] font-medium leading-[39px] text-brand">
-              Máte zájem o prohlídku?
-            </p>
+        <div className="flex flex-col gap-[30px]">
+          {agent ? (
+            <aside className="h-fit rounded-btn bg-card p-[40px] shadow-card">
+              <p className="text-center text-[30px] font-medium leading-[39px] text-brand">
+                Máte zájem o prohlídku?
+              </p>
 
-            <div className="mt-[18px] flex items-center gap-[30px]">
-              {imageUrl(agent.photo, 'thumbnail') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl(agent.photo, 'thumbnail')}
-                  alt={agent.name}
-                  className="h-20 w-20 shrink-0 rounded-btn object-cover"
-                />
-              ) : null}
-              <div>
-                <p className="text-[16px] font-bold leading-[21px] text-brand">{agent.name}</p>
-                {agent.jobTitle ? (
-                  <p className="mt-1 text-[16px] leading-[21px] text-muted">{agent.jobTitle}</p>
+              <div className="mt-[18px] flex items-center gap-[30px]">
+                {imageUrl(agent.photo, 'thumbnail') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imageUrl(agent.photo, 'thumbnail')}
+                    alt={agent.name}
+                    className="h-20 w-20 shrink-0 rounded-btn object-cover"
+                  />
+                ) : null}
+                <div>
+                  <p className="text-[16px] font-bold leading-[21px] text-brand">{agent.name}</p>
+                  {agent.jobTitle ? (
+                    <p className="mt-1 text-[16px] leading-[21px] text-muted">{agent.jobTitle}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-[40px] flex flex-wrap gap-3">
+                <SolidButton href="#kontakt" className="flex-1">
+                  Domluvit prohlídku
+                </SolidButton>
+                {agent.phone ? (
+                  <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
+                    Zavolat makléři
+                  </OutlineButton>
                 ) : null}
               </div>
-            </div>
 
-            <div className="mt-[40px] flex flex-wrap gap-3">
-              <SolidButton href="#kontakt" className="flex-1">
-                Domluvit prohlídku
-              </SolidButton>
-              {agent.phone ? (
-                <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
-                  Zavolat makléři
-                </OutlineButton>
-              ) : null}
-            </div>
-
-            <div className="mt-[60px] flex flex-wrap gap-x-12 gap-y-3">
-              {agent.phone ? (
-                <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.phone}</p>
-              ) : null}
-              {agent.email ? (
-                <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.email}</p>
-              ) : null}
-            </div>
-          </aside>
-        ) : null}
+              <div className="mt-[60px] flex flex-wrap gap-x-12 gap-y-3">
+                {agent.phone ? (
+                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.phone}</p>
+                ) : null}
+                {agent.email ? (
+                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.email}</p>
+                ) : null}
+              </div>
+            </aside>
+          ) : null}
+          {calculatorPrice ? <MortgageCalculator price={calculatorPrice} /> : null}
+        </div>
       </Container>
 
       {property.address?.city ? (
@@ -479,6 +493,7 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
               ? '. Přesná adresa je k dispozici na vyžádání.'
               : '.'}
           </p>
+          {site.features.listingMap ? <PropertyMap property={property} className="mt-[30px]" /> : null}
         </Container>
       ) : null}
 

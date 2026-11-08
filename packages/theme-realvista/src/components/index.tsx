@@ -13,6 +13,11 @@ import type { ReactNode } from 'react'
 
 import { ServiceGlyph } from '../icons.js'
 
+export { PropertyMap, mapView, osmEmbedUrl } from './PropertyMap.js'
+// The component only: anything else exported from a 'use client' module becomes
+// a client reference on the server and cannot be called there.
+export { MortgageCalculator } from './MortgageCalculator.js'
+
 /**
  * REALVISTA building blocks, matching the Figma CSS export.
  *
