@@ -48,7 +48,8 @@ These are not style. Each one protects a real client or Josef's machine.
    a command whose argv contains a known secret.
 3. **Never run outward steps.** No `gh`, `vercel`, `neonctl`, `doctl`, no
    `curl`/`wget` to `api.github.com` or `api.vercel.com`, no `git push`, no
-   `git remote add`. Production deployment is deliberately not done in this
+   `git remote add`, no `cw secret-pipe` (the plan's secret indirection; it
+   refuses in local mode). Production deployment is deliberately not done in this
    phase; Josef pushes after review. The outward steps exist only as a plan:
    their status is `planned` and `clients/<slug>/outward-plan.md` says exactly
    what would run. If asked to push, deploy, create repos or Vercel projects,

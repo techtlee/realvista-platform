@@ -49,7 +49,7 @@ before doing anything else.
 | `STEP_FAILED` | 5 | a step's command failed | `cw status` → `error.log` (redacted per-step log). Common: install failed (network), migrate failed (DB), build failed (backend not up: `cw run` re-checks it). Fix, then `cw run`. Ask Josef after two identical failures |
 | `CRASHED` | 5 | a step was `running` when the state was loaded (killed, timeout) | Just `cw run` again; probes and `recover()` handle the half-done step |
 | `LOCKED` | 6 | another `cw` process holds the lock | Probably still running (or in another terminal). Wait, or ask Josef. Never delete the lock |
-| `OUTWARD_REFUSED` | 7 | an outward `apply()` was invoked | Expected in this phase. Production steps are planned only: point at `outward-plan.md` |
+| `OUTWARD_REFUSED` | 7 | an outward `apply()` was invoked, or `cw secret-pipe` (any of its three forms) was run | Expected in this phase. Production steps are planned only: point at `outward-plan.md`. `cw secret-pipe` is a placeholder for the lead's production run; don't retry it or work around it |
 | `EXEC_REFUSED` | 7 | the exec guard blocked a command (gh/vercel/neonctl/API host/nameserver/secret in argv) | It is a bug if `cw` itself triggered it; report it. Never work around it |
 
 ## Reading a step log

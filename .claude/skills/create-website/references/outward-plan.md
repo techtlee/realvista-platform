@@ -18,7 +18,7 @@ To show the plan without running anything: `cw plan <input> --outward --json`.
 | `github-repos` | 13 | `gh repo view OWNER/<repo> \|\| gh repo create OWNER/<repo> --public --source . --remote origin --push` for `backend-<slug>` and `site-<slug>`; public during development |
 | `postgres-hosting` | 14 | one DB per client; provider still open (Neon EU as the example); the connection string goes straight into Vercel env, never a file in the repo |
 | `vercel-projects` | 15 | `vercel link --yes --project <repo> --scope TEAM`, `vercel git connect`, `vercel deploy --prod`; backend first |
-| `vercel-env` | 15 | one `vercel env add NAME production` per variable, value piped from a **secret reference** (`cw secret-pipe <file> <key>`, a placeholder that refuses in this phase); production credentials are new, never the dev ones |
+| `vercel-env` | 15 | one `vercel env add NAME production` per variable, value piped from a **secret reference** (see `cw secret-pipe` below); production credentials are new values in `backend/.env.production.local` / `site/.env.production.local`, never the dev ones |
 | `fallback-domains` | 16 | `<slug>.<base>` → site, `admin.<slug>.<base>` → backend, via the Vercel API on realvista.cz (its nameservers are at Vercel, ours) |
 | `deploy-hook` | 16 | **not needed (ISR)**: saves revalidate the site on demand; a git push redeploys code |
 | `client-dns` | 17 | **instructions only, no command**: three records for the client to add at their registrar |
@@ -27,6 +27,22 @@ To show the plan without running anything: `cw plan <input> --outward --json`.
 
 `OWNER` (GitHub org/user) and `TEAM` (Vercel team) stay placeholders until
 Josef decides them.
+
+## `cw secret-pipe`: secret references in the plan
+
+The plan never contains a secret value. Wherever production needs one, it
+uses one of three forms:
+
+| Form | Meaning |
+|---|---|
+| `cw secret-pipe <slug> <file> <KEY> \| <command>` | read one value from a production secret file and pipe it to the command's stdin |
+| `<command> \| cw secret-pipe --write <slug> <file> <KEY>` | capture a command's output (e.g. a minted key) straight into the file, unseen |
+| `cw secret-pipe --generate <slug> <file> <KEY>` | generate a new value into the file if it is missing |
+
+`cw secret-pipe` is a **documented placeholder in this phase and refuses in
+local mode** (exit 7, `OUTWARD_REFUSED`). Never run it, and never substitute
+it with `cat`, `grep` or `printf` on a secret file: that is exactly the leak the
+indirection exists to prevent.
 
 ## Client DNS: records only, never nameservers
 
