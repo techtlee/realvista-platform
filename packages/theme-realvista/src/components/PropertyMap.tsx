@@ -94,7 +94,8 @@ export function PropertyMap({ property, className = '' }: { property: Property; 
 
   return (
     <figure data-rv-map="" className={className}>
-      <div className="h-[300px] overflow-hidden rounded-btn bg-accent sm:h-[400px]">
+      {/* 640×234 in the design, beside nothing: a strip, not a panel. */}
+      <div className="h-[234px] overflow-hidden rounded-btn bg-accent">
         <iframe
           src={osmEmbedUrl(view)}
           title={place ? `Mapa — ${place}` : 'Mapa'}

@@ -126,3 +126,49 @@ export function ServiceGlyph({ icon, className }: { icon?: ServiceIcon | null; c
   const Icon = (icon && icons[icon]) || icons.home
   return <Icon className={className} />
 }
+
+/*
+ * Interface icons, copied path for path from the Figma components
+ * (`arrow-right`, `phone`, `mail`). They are stroked in the brand colour there;
+ * `currentColor` here, so each colourway gets its own without a second asset.
+ */
+
+function UiIcon({ size, className = '', children }: { size: number; className?: string; children: ReactNode }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      aria-hidden
+      focusable="false"
+      className={className}
+    >
+      {children}
+    </svg>
+  )
+}
+
+/** 16px, the footer newsletter field. */
+export const ArrowRightIcon = ({ className }: { className?: string }) => (
+  <UiIcon size={16} className={className}>
+    <path d="M3.3328 8H12.6672M8 12.6672L12.6672 8L8 3.3328" />
+  </UiIcon>
+)
+
+/** 18px, the agent card on a listing. */
+export const PhoneIcon = ({ className }: { className?: string }) => (
+  <UiIcon size={18} className={className}>
+    <path d="M10.3741 12.4263C10.529 12.4974 10.7035 12.5137 10.8689 12.4724C11.0343 12.431 11.1807 12.3346 11.2839 12.199L11.5502 11.8502C11.6899 11.6639 11.8711 11.5127 12.0794 11.4086C12.2877 11.3044 12.5174 11.2502 12.7503 11.2502H15.0005C15.3983 11.2502 15.7799 11.4082 16.0612 11.6896C16.3426 11.9709 16.5006 12.3524 16.5006 12.7503V15.0005C16.5006 15.3983 16.3426 15.7799 16.0612 16.0612C15.7799 16.3426 15.3983 16.5006 15.0005 16.5006C11.4198 16.5006 7.98572 15.0782 5.45377 12.5462C2.92183 10.0143 1.4994 6.58023 1.4994 2.99952C1.4994 2.60166 1.65745 2.2201 1.93877 1.93877C2.2201 1.65745 2.60166 1.4994 2.99952 1.4994H5.2497C5.64756 1.4994 6.02912 1.65745 6.31044 1.93877C6.59177 2.2201 6.74982 2.60166 6.74982 2.99952V5.2497C6.74982 5.48259 6.6956 5.71227 6.59145 5.92057C6.4873 6.12887 6.33608 6.31006 6.14977 6.4498L5.79874 6.71307C5.66104 6.81821 5.56399 6.96778 5.52406 7.13636C5.48414 7.30495 5.50381 7.48216 5.57973 7.63789C6.60482 9.71996 8.29076 11.4038 10.3741 12.4263Z" />
+  </UiIcon>
+)
+
+/** 18px, the agent card on a listing. */
+export const MailIcon = ({ className }: { className?: string }) => (
+  <UiIcon size={18} className={className}>
+    <path d="M16.5006 5.25038L9.75681 9.5452C9.52796 9.67809 9.26802 9.74809 9.00338 9.74809C8.73873 9.74809 8.47879 9.67809 8.24994 9.5452L1.4994 5.25038M16.5006 5.25038V4.50045C16.5006 3.67211 15.829 3.0006 15.0005 3.0006H2.99952C2.17103 3.0006 1.4994 3.67211 1.4994 4.50045V5.25038M16.5006 5.25038V13.4996C16.5006 14.3279 15.829 14.9994 15.0005 14.9994H2.99952C2.17103 14.9994 1.4994 14.3279 1.4994 13.4996V5.25038" />
+  </UiIcon>
+)

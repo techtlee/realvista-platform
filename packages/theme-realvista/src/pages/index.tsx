@@ -18,16 +18,18 @@ import {
   pricePerSquareMetre,
   propertyHeading,
   regionCounts,
+  richTextToParagraphs,
 } from '@makleri/core/format'
+import type { GalleryItem } from '@makleri/core/content'
 import type { ReactNode } from 'react'
 
+import { MailIcon, PhoneIcon } from '../icons.js'
 import { manifest } from '../manifest.js'
 
 import {
   Container,
   ContactSection,
   Footer,
-  GhostButton,
   Header,
   MorePropertiesCard,
   MortgageCalculator,
@@ -73,6 +75,12 @@ export function RealvistaHome({
   const regions = regionCounts(listings)
   const grid = featured.length > 0 ? featured : listings.slice(0, 8)
   const remaining = Math.max(totalListings - grid.length, 0)
+  // The band's paragraph is the realtor's own introduction: the about text,
+  // else the agent bio, else name and title.
+  const agentIntro =
+    richTextToParagraphs(settings?.about?.body).join(' ') ||
+    richTextToParagraphs(agent?.bio).join(' ') ||
+    (agent ? (agent.jobTitle ? `${agent.name} — ${agent.jobTitle}.` : `${agent.name}.`) : '')
 
   // `pages.home.sections` was validated by core and then ignored, because the
   // order was hard-coded in JSX. Unknown ids are skipped rather than throwing:
@@ -82,21 +90,26 @@ export function RealvistaHome({
 
   const sections: Record<string, ReactNode> = {
     hero: (
-      <section key="hero" className="relative isolate h-[700px] overflow-hidden">
+      // How the photo sits is the colourway's call, not the markup's: full
+      // bleed under a wash (indigo, mono), or the right half of a gradient
+      // band, as the cut-out portrait is drawn on crimson and clay. See
+      // `.rv-hero` in theme.css.
+      <section key="hero" className="rv-hero relative isolate h-[700px] overflow-hidden">
         {heroSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={heroSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={heroSrc} alt="" className="rv-hero-photo absolute inset-y-0 h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-accent" />
+          <div className="rv-hero-empty absolute inset-0" />
         )}
         <div className="rv-hero-overlay absolute inset-0" />
 
-        <Container className="relative flex h-full flex-col justify-center">
+        {/* Top-anchored, not centred: the headline starts 188px down on the canvas. */}
+        <Container className="relative pt-[120px] lg:pt-[188px]">
           <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-hero-ink sm:text-[60px] sm:leading-[67px]">
             {hero?.headline ?? 'Reality nejsou jen nemovitosti. Jsou to vaše další kroky.'}
           </h1>
           {hero?.subheadline ? (
-            <p className="mt-10 max-w-[530px] text-[22px] font-medium leading-[1.2] text-hero-ink sm:text-[30px] sm:leading-[36px]">
+            <p className="mt-10 max-w-[530px] text-[22px] font-medium leading-[1.2] text-hero-ink sm:text-[30px] sm:leading-[36px] lg:mt-[110px]">
               {hero.subheadline}
             </p>
           ) : null}
@@ -112,7 +125,7 @@ export function RealvistaHome({
               <h2 className="text-[30px] font-medium leading-[36px] text-brand">
                 Nabídka našich nemovitostí
               </h2>
-              <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
+              <p className="rv-track text-[16px] leading-[20px] text-brand">
                 Vyberte si svůj nový domov.
               </p>
             </div>
@@ -122,7 +135,8 @@ export function RealvistaHome({
           </div>
 
           {regions.length > 0 ? (
-            <div className="-mx-5 mt-[50px] flex gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            // The row scrolls sideways and fades out over its last 52px, as drawn.
+            <div className="-mx-5 mt-[30px] flex gap-[10px] overflow-x-auto px-5 [mask-image:linear-gradient(to_right,#000_calc(100%-52px),transparent)] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
               {regions.map((r) => (
                 <RegionChip
                   key={r.value}
@@ -152,30 +166,32 @@ export function RealvistaHome({
 
     services: <ServicesSection key="services" services={services} />,
 
+    // A 300px band, 200px below the listings. The 420×459 portrait stands on
+    // its bottom edge and rises 159px out of it; it sits 110px in from the
+    // right, mirroring the text's 110px indent on the left.
     agent: agent ? (
-      <section key="agent" id="o-makleri" className="rv-band-a relative mt-[150px] py-[55px]">
-        <Container className="grid items-center gap-10 lg:grid-cols-[1fr_420px]">
-          <div className="lg:pl-[110px]">
+      <section key="agent" id="o-makleri" className="rv-band-a relative mt-[150px] lg:mt-[200px]">
+        <Container>
+          <div className="grid gap-10 pt-[55px] lg:min-h-[300px] lg:grid-cols-[1fr_420px] lg:gap-5 lg:pb-[55px] xl:px-[110px]">
+          <div>
             <h2 className="max-w-[530px] text-[30px] font-medium leading-[36px] text-white">
               {settings?.about?.heading ?? 'Reality nejsou jen cihly. Jsou to vaše další životní kroky.'}
             </h2>
             <p className="rv-track mt-5 max-w-[640px] text-[16px] leading-[22px] text-white">
-              {agent.jobTitle ? `${agent.name} — ${agent.jobTitle}.` : `${agent.name}.`}
+              {agentIntro}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {agent.phone ? (
-                <GhostButton href={`tel:${agent.phone.replace(/\s/g, '')}`}>{agent.phone}</GhostButton>
-              ) : null}
-            </div>
           </div>
-          {imageUrl(agent.photo, 'card') ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl(agent.photo, 'card')}
-              alt={agent.name}
-              className="mx-auto h-[459px] w-[420px] object-cover object-top"
-            />
-          ) : null}
+          <div className="relative">
+            {imageUrl(agent.photo, 'card') ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imageUrl(agent.photo, 'card')}
+                alt={agent.name}
+                className="mx-auto block h-[459px] w-full max-w-[420px] object-cover object-top lg:absolute lg:-bottom-[55px] lg:right-0 lg:w-[420px]"
+              />
+            ) : null}
+          </div>
+          </div>
         </Container>
       </section>
     ) : null,
@@ -183,7 +199,8 @@ export function RealvistaHome({
     stats: settings?.stats?.length ? (
       <section key="stats" className="rv-band-b py-[72px]">
         <Container>
-          <dl className="grid gap-12 text-center sm:grid-cols-3">
+          {/* Column centres sit at 330 / 720 / 1118 on the canvas: a 1182px row, not the full 1300. */}
+          <dl className="mx-auto grid max-w-[1182px] gap-12 text-center sm:grid-cols-3">
             {settings.stats.map((s, i) => (
               <div key={i}>
                 <dt className="text-[60px] font-medium leading-[67px] text-white">{s.value}</dt>
@@ -200,12 +217,13 @@ export function RealvistaHome({
     // Off means no /blog route exists on the client site, so no teaser either.
     blog:
       site.features.blog && posts.length > 0 ? (
-        <section key="blog" className="pb-[150px] pt-[150px]">
+        // 192px under the contact form, 250px (50 + the footer's 200) above the footer.
+        <section key="blog" className="pb-[50px] pt-[150px] lg:pt-[192px]">
           <Container>
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div>
                 <h2 className="text-[30px] font-medium leading-[36px] text-brand">Vědomosti a praxe</h2>
-                <p className="rv-track mt-4 max-w-[520px] text-[16px] leading-[20px] text-brand">
+                <p className="rv-track max-w-[520px] text-[16px] leading-[20px] text-brand">
                   Pravidelně sdílím své zkušenosti, hloubkové analýzy a praktické tipy.
                 </p>
               </div>
@@ -214,7 +232,7 @@ export function RealvistaHome({
               </SolidButton>
             </div>
 
-            <div className="mt-[60px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {posts.slice(0, 3).map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
@@ -259,7 +277,7 @@ export function RealvistaListingIndex({ site, settings, listings, totalListings 
   return (
     <>
       <Header settings={settings} site={site} />
-      <Container className="py-[90px]">
+      <Container className="pt-[90px]">
         <h1 className="text-[30px] font-medium leading-[36px] text-brand">Nabídka nemovitostí</h1>
         <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
           {listingCount(totalListings)}
@@ -348,16 +366,19 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
           <a href="/nemovitosti" className="hover:text-brand">
             Nemovitosti
           </a>
-          <span>›</span>
+          <span aria-hidden="true">&gt;</span>
           <span>{locationLabel(property)}</span>
-          <span>›</span>
+          <span aria-hidden="true">&gt;</span>
           <span className="font-medium text-brand">{propertyHeading(property)}</span>
         </nav>
       </Container>
 
       {gallery.length > 0 ? (
-        <Container className="mt-[38px]">
-          <div className="grid gap-5 lg:grid-cols-[640px_1fr]">
+        // Three columns, 640 / 310 / 310: the cover, two 240px photos stacked,
+        // then one 430px photo with the "all photos" bar under it. Four photos
+        // show; the bar counts the rest.
+        <Container className="mt-5">
+          <div className="grid gap-5 lg:grid-cols-[640fr_310fr_310fr]">
             <div className="h-[320px] overflow-hidden rounded-btn bg-accent sm:h-[500px]">
               {imageUrl(main?.image, 'hero') ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -370,43 +391,38 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
             </div>
 
             {rest.length > 0 ? (
-              <div className="grid gap-5 sm:grid-cols-2">
-                {rest.slice(0, 4).map((g, i) => (
-                  <div key={i} className="h-[150px] overflow-hidden rounded-btn bg-accent sm:h-[240px]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imageUrl(g.image, 'card')}
-                      alt={g.alt ?? ''}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-5 lg:grid-cols-1 lg:grid-rows-[240px_240px]">
+                {rest.slice(0, 2).map((g, i) => (
+                  <GalleryTile key={i} item={g} className="h-[150px] sm:h-[240px]" />
                 ))}
               </div>
             ) : null}
-          </div>
 
-          {gallery.length > 5 ? (
-            <div className="mt-5 flex justify-end">
-              <div className="flex h-[50px] w-full items-center justify-between rounded-btn bg-brand px-[30px] sm:w-[310px]">
-                <span className="text-[16px] font-bold leading-[20px] text-white">Všechny fotky</span>
-                <span className="text-[16px] font-bold leading-[20px] text-white opacity-60">
-                  +{gallery.length - 5}
-                </span>
+            {rest.length > 2 || gallery.length > 4 ? (
+              <div className="flex flex-col gap-5">
+                {rest[2] ? <GalleryTile item={rest[2]} className="hidden lg:block lg:h-[430px]" /> : null}
+                {gallery.length > 4 ? (
+                  <div className="mt-auto flex h-[50px] w-full items-center justify-between rounded-btn bg-brand px-[30px]">
+                    <span className="text-[16px] font-bold leading-[20px] text-white">Všechny fotky</span>
+                    <span className="text-[16px] font-bold leading-[20px] text-white opacity-60">
+                      +{gallery.length - 4}
+                    </span>
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </Container>
       ) : null}
 
-      <Container className="mt-[50px]">
-        <div className="flex flex-wrap items-start justify-between gap-6 rounded-btn bg-card px-5 py-[30px] shadow-card sm:px-[50px]">
+      <Container className="mt-5">
+        <div className="flex min-h-[150px] flex-wrap items-start justify-between gap-6 rounded-btn bg-card px-5 py-[30px] shadow-card sm:px-[50px]">
           <div>
             <h1 className="max-w-[595px] text-[30px] font-medium leading-[36px] text-brand">
               {property.title}
             </h1>
             {specPills.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-[10px] flex flex-wrap gap-3">
                 {specPills.map((s) => (
                   <SpecPill key={s}>{s}</SpecPill>
                 ))}
@@ -422,16 +438,17 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
 
       <Container className="mt-[100px] grid gap-[60px] lg:grid-cols-[640px_1fr] lg:gap-[130px]">
         <div>
-          <h2 className="text-[30px] font-medium leading-[39px] text-brand">Popis nemovitosti</h2>
+          <h2 className="text-[30px] font-medium leading-[39px] text-brand">O nemovitosti</h2>
           <RichText
             value={property.description}
-            className="mt-[50px] text-[16px] leading-[26px] text-brand"
+            className="mt-[11px] text-[16px] leading-[26px] text-brand"
+            paragraphClassName="mb-[26px] last:mb-0"
           />
 
           <h2 className="mt-[100px] text-[30px] font-medium leading-[39px] text-brand">
             Parametry nemovitosti
           </h2>
-          <dl className="mt-[25px] border-t border-accent">
+          <dl className="mt-[21px] border-t border-accent">
             {params
               .filter(([, v]) => v)
               .map(([k, v]) => (
@@ -451,7 +468,7 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
 
         <div className="flex flex-col gap-[30px]">
           {agent ? (
-            <aside className="h-fit rounded-btn bg-card p-[40px] shadow-card">
+            <aside className="h-fit rounded-btn bg-card px-5 pb-10 pt-[30px] shadow-card sm:px-[40px] lg:min-h-[400px]">
               <p className="text-center text-[30px] font-medium leading-[39px] text-brand">
                 Máte zájem o prohlídku?
               </p>
@@ -473,23 +490,30 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
                 </div>
               </div>
 
-              <div className="mt-[40px] flex flex-wrap gap-3">
-                <SolidButton href="#kontakt" className="flex-1">
+              {/* Two 212px buttons 26px apart; each contact line centred under its button. */}
+              <div className="mt-[40px] grid gap-3 sm:grid-cols-2 sm:gap-[26px]">
+                <SolidButton href="#kontakt" className="px-4">
                   Domluvit prohlídku
                 </SolidButton>
                 {agent.phone ? (
-                  <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="flex-1">
+                  <OutlineButton href={`tel:${agent.phone.replace(/\s/g, '')}`} className="px-4">
                     Zavolat makléři
                   </OutlineButton>
                 ) : null}
               </div>
 
-              <div className="mt-[60px] flex flex-wrap gap-x-12 gap-y-3">
+              <div className="mt-[50px] grid gap-3 sm:grid-cols-2 sm:gap-[26px]">
                 {agent.phone ? (
-                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.phone}</p>
+                  <p className="flex items-center gap-3 text-[16px] font-medium leading-[21px] text-brand sm:justify-center">
+                    <PhoneIcon className="shrink-0" />
+                    {agent.phone}
+                  </p>
                 ) : null}
                 {agent.email ? (
-                  <p className="text-[16px] font-medium leading-[21px] text-brand">{agent.email}</p>
+                  <p className="flex items-center gap-3 text-[16px] font-medium leading-[21px] text-brand sm:justify-center">
+                    <MailIcon className="shrink-0" />
+                    {agent.email}
+                  </p>
                 ) : null}
               </div>
             </aside>
@@ -499,25 +523,27 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
       </Container>
 
       {property.address?.city ? (
-        <Container className="mt-[100px]">
+        <Container className="mt-[100px] lg:mt-[115px]">
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Lokalita</h2>
-          <p className="mt-[50px] max-w-[640px] text-[16px] leading-[24px] text-brand">
+          <p className="mt-[11px] max-w-[640px] text-[16px] leading-[24px] text-brand">
             {locationLabel(property)}
             {property.address.hideExactAddress
               ? '. Přesná adresa je k dispozici na vyžádání.'
               : '.'}
           </p>
-          {site.features.listingMap ? <PropertyMap property={property} className="mt-[30px]" /> : null}
+          {site.features.listingMap ? (
+            <PropertyMap property={property} className="mt-[30px] max-w-[640px] lg:mt-[80px]" />
+          ) : null}
         </Container>
       ) : null}
 
       {similar.length > 0 ? (
-        <Container className="mt-[100px]">
+        <Container className="mt-[61px]">
           <h2 className="text-[30px] font-medium leading-[39px] text-brand">Podobné nemovitosti</h2>
-          <p className="mt-2 text-[16px] leading-[21px] text-muted">
+          <p className="text-[16px] leading-[21px] text-muted">
             Prohlédněte si další exkluzivní nemovitosti v okolí.
           </p>
-          <div className="mt-[50px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-[55px] grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {similar.map((p) => (
               <PropertyCard key={p.id} property={p} />
             ))}
@@ -525,13 +551,26 @@ export function RealvistaPropertyDetail({ site, settings, property, similar }: P
         </Container>
       ) : null}
 
-      <div className="mt-[150px]">
-        {/* The enquiry arrives attached to the listing it was sent from. */}
-        <ContactSection settings={settings} propertyId={property.id} />
-      </div>
+      {/* The enquiry arrives attached to the listing it was sent from. */}
+      <ContactSection settings={settings} propertyId={property.id} />
 
       <Footer settings={settings} site={site} />
     </>
+  )
+}
+
+/** One photo of the listing gallery, cropped to whatever box the grid gives it. */
+function GalleryTile({ item, className = '' }: { item: GalleryItem; className?: string }) {
+  return (
+    <div className={`overflow-hidden rounded-btn bg-accent ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl(item.image, 'card')}
+        alt={item.alt ?? ''}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+    </div>
   )
 }
 
@@ -545,7 +584,7 @@ export function RealvistaBlogIndex({ site, settings, posts }: BlogIndexPageProps
         title="Vědomosti a praxe"
         lead="Zkušenosti z trhu, hloubkové analýzy a praktické tipy k prodeji i pronájmu."
       />
-      <Container className="pb-[150px] pt-[50px]">
+      <Container className="pt-[50px]">
         {posts.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((post) => (
@@ -603,11 +642,14 @@ export function RealvistaPostDetail({ site, settings, post, recent }: PostDetail
         </Container>
       ) : null}
 
-      <Container className="mt-[60px] max-w-[760px]">
-        {post.excerpt ? (
-          <p className="text-[22px] font-medium leading-[32px] text-brand">{post.excerpt}</p>
-        ) : null}
-        <RichText value={post.body} className="mt-[40px] text-[16px] leading-[26px] text-brand" />
+      {/* A 760px reading column; on Container itself the max-width loses to Container's own. */}
+      <Container className="mt-[60px]">
+        <div className="mx-auto max-w-[760px]">
+          {post.excerpt ? (
+            <p className="text-[22px] font-medium leading-[32px] text-brand">{post.excerpt}</p>
+          ) : null}
+          <RichText value={post.body} className="mt-[40px] text-[16px] leading-[26px] text-brand" />
+        </div>
       </Container>
 
       {recent.length > 0 ? (
@@ -621,9 +663,7 @@ export function RealvistaPostDetail({ site, settings, post, recent }: PostDetail
         </Container>
       ) : null}
 
-      <div className="mt-[150px]">
-        <ContactSection settings={settings} />
-      </div>
+      <ContactSection settings={settings} />
 
       <Footer settings={settings} site={site} />
     </>

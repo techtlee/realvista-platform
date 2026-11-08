@@ -27,6 +27,6 @@ export default defineTheme({
 })
 
 export { manifest } from './manifest.js'
-export { icons, ServiceGlyph } from './icons.js'
+export { ArrowRightIcon, icons, MailIcon, PhoneIcon, ServiceGlyph } from './icons.js'
 export * from './pages/index.js'
 export * from './components/index.js'
