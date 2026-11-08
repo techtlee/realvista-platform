@@ -32,29 +32,57 @@ export interface SecretsCheckResult {
   hits: SecretHit[]
 }
 
-/** Secret-classified values per key, read in-process from the three files. */
-export async function knownSecrets(ctx: Ctx): Promise<Map<string, string>> {
-  const out = new Map<string, string>()
+/** One secret to look for: the whole value always; 12-char pieces only of `pieces`. */
+export interface KnownSecret {
+  value: string
+  key: string
+  /** the part whose fragments would leak something (the password of a URL); null = whole-value match only */
+  pieces: string | null
+}
+
+/**
+ * A connection URL is mostly public (scheme, host, port, DB name all appear in
+ * .env.example, the state and the README); only its password is secret. A
+ * passwordless local URL therefore has no fragments worth flagging.
+ */
+export function secretParts(value: string, key: string): KnownSecret {
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+    try {
+      const u = new URL(value)
+      const pw = decodeURIComponent(u.password)
+      return { value, key, pieces: pw.length >= 8 ? pw : null }
+    } catch {
+      /* not a URL after all */
+    }
+  }
+  return { value, key, pieces: value }
+}
+
+/** Secret-classified values, read in-process from the secret files (values never leave this process). */
+export async function knownSecrets(ctx: Ctx): Promise<KnownSecret[]> {
+  const out = new Map<string, KnownSecret>()
   for (const f of SECRET_FILES) {
     if (!existsSync(ctx.secrets.pathOf(f))) continue
     for (const key of await ctx.secrets.keys(f)) {
       const v = await ctx.secrets.get({ file: f, key })
       // Only values the store itself treats as secret (it ignores ports, slugs, e-mails…).
-      if (v && ctx.secrets.knownValues().includes(v)) out.set(v, `${f}:${key}`)
+      if (v && ctx.secrets.knownValues().includes(v)) out.set(v, secretParts(v, `${f}:${key}`))
     }
   }
-  for (const v of ctx.secrets.knownValues()) if (!out.has(v)) out.set(v, '(registered)')
-  return out
+  for (const v of ctx.secrets.knownValues()) if (!out.has(v)) out.set(v, secretParts(v, '(registered)'))
+  return [...out.values()]
 }
 
 export class SecretScanner {
   private readonly whole: Array<[string, string]>
   private readonly pieces = new Map<string, string>()
 
-  constructor(secrets: Map<string, string>) {
-    this.whole = [...secrets.entries()].filter(([v]) => v.length >= 8)
-    for (const [v, key] of this.whole) {
-      for (let i = 0; i + SUBSTRING_LEN <= v.length; i++) this.pieces.set(v.slice(i, i + SUBSTRING_LEN), key)
+  constructor(secrets: KnownSecret[] | Map<string, string>) {
+    const list = secrets instanceof Map ? [...secrets.entries()].map(([v, key]) => secretParts(v, key)) : secrets
+    this.whole = list.filter((s) => s.value.length >= 8).map((s) => [s.value, s.key])
+    for (const s of list) {
+      if (!s.pieces) continue
+      for (let i = 0; i + SUBSTRING_LEN <= s.pieces.length; i++) this.pieces.set(s.pieces.slice(i, i + SUBSTRING_LEN), s.key)
     }
   }
 
@@ -129,5 +157,5 @@ export async function secretsCheck(ctx: Ctx): Promise<SecretsCheckResult> {
   for (const repo of [ctx.paths.record, ctx.paths.backend, ctx.paths.site]) {
     for (const f of await committedSecretFiles(ctx, repo)) hits.push({ file: `${rel(join(repo, f))} (in git history)`, key: f, kind: 'value' })
   }
-  return { ok: hits.length === 0, scannedFiles: scanned, secretsKnown: secrets.size, hits }
+  return { ok: hits.length === 0, scannedFiles: scanned, secretsKnown: secrets.length, hits }
 }

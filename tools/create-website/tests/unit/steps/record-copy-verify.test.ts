@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { initStarterCopy, requestRules, validateStarterCopy } from '../../../src/copy/index.js'
 import { input, recordRepo, starterCopy } from '../../../src/steps/record.js'
 import { relativeSpecifiers, sectionOrder, variantOf } from '../../../src/verify/checks.js'
-import { SecretScanner, secretsCheck } from '../../../src/verify/secretsCheck.js'
+import { SecretScanner, secretParts, secretsCheck } from '../../../src/verify/secretsCheck.js'
 import { REQUEST, git, makeWorld, type World } from './helpers.js'
 
 let w: World
@@ -145,5 +145,19 @@ describe('secrets-check', () => {
     git(w.ctx.paths.site, 'commit', '-q', '-m', 'remove')
     const r = await secretsCheck(w.ctx)
     expect(r.hits.some((h) => h.file.includes('.env.local') && h.file.includes('history'))).toBe(true)
+  })
+})
+
+describe('secrets-check on connection URLs', () => {
+  it('a passwordless local DATABASE_URL only matches whole; its public pieces are not leaks', () => {
+    const s = new SecretScanner([secretParts('postgres://localhost:5432/cw6_backend_x_dev', 'backend/.env:DATABASE_URL')])
+    expect(s.scan('DATABASE_URL=postgres://localhost:5432/your-db')).toEqual([])
+    expect(s.scan('db cw6_backend_x_dev')).toEqual([])
+    expect(s.scan('postgres://localhost:5432/cw6_backend_x_dev')).toHaveLength(1)
+  })
+  it('a URL with a password flags fragments of the password', () => {
+    const s = new SecretScanner([secretParts('postgres://u:Zx9-very-secret-pw-42@db.example:5432/x', 'k')])
+    expect(s.scan('…very-secret-pw…')).toEqual([{ key: 'k', kind: 'substring' }])
+    expect(s.scan('postgres://u:@db.example:5432/x')).toEqual([])
   })
 })
