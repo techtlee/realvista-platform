@@ -70,3 +70,30 @@ export function cssVariants(css: string): string[] {
 
 /** True when the stylesheet uses `@theme inline`, without which variants do nothing. */
 export const usesThemeInline = (css: string): boolean => /@theme\s+inline\s*\{/.test(css)
+
+/**
+ * How many times an element opens in rendered markup.
+ *
+ * `<header` followed by whitespace, `>` or `/` — so `<headline>` or a custom
+ * `<header-bar>` does not count.
+ */
+export function tagCount(html: string, tag: string): number {
+  return [...html.matchAll(new RegExp(`<${tag}(?=[\\s>/])`, 'gi'))].length
+}
+
+/**
+ * True when the page's first `<header>` opens before any `<section>` or `<main>`.
+ *
+ * A header rendered inside the hero section — REALVISTA's, until the realtor
+ * moved the hero down the page and the nav went with it — fails this.
+ */
+export function headerComesFirst(html: string): boolean {
+  const header = html.search(/<header(?=[\s>/])/i)
+  if (header < 0) return false
+  const content = html.search(/<(section|main)(?=[\s>/])/i)
+  return content < 0 || header < content
+}
+
+/** True when the markup links to the blog index or any post. */
+export const linksToBlog = (html: string): boolean =>
+  internalLinks(html).some((l) => l === '/blog' || l.startsWith('/blog/'))

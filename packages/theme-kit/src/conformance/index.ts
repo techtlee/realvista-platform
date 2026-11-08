@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs'
+
+import type { SiteConfig } from '@makleri/core/config'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -15,7 +17,15 @@ import type {
 import { THEME_PAGES } from '../index.js'
 import type { ThemeFixture } from '../fixtures/index.js'
 import { CZECH_DIACRITICS, SERVICE_ICONS, themeFixtures } from '../fixtures/index.js'
-import { cssVariants, danglingLinks, strayTokens, usesThemeInline } from './checks.js'
+import {
+  cssVariants,
+  danglingLinks,
+  headerComesFirst,
+  linksToBlog,
+  strayTokens,
+  tagCount,
+  usesThemeInline,
+} from './checks.js'
 
 /**
  * The conformance suite — the deliverable that keeps the CMS fixed.
@@ -88,6 +98,9 @@ function toDirUrl(root: string | URL): URL {
   if (!url.pathname.endsWith('/')) url.pathname += '/'
   return url
 }
+
+/** The home order a fixture asks for, falling back to the theme's own default. */
+const homeSections = (site: SiteConfig): string[] => [...(site.pages.home?.sections ?? [])]
 
 const render = (theme: ThemeModule, page: ThemePageName, props: unknown): string =>
   renderToStaticMarkup(createElement(theme.pages[page] as never, props as never))
@@ -228,6 +241,58 @@ export function runThemeConformance(theme: ThemeModule, options: ConformanceOpti
         if (!p) continue
         expect(() => render(theme, page, p), `page "${page}" crashed`).not.toThrow()
       }
+    })
+
+    // ── modules and layout ──────────────────────────────────────────────────
+    //
+    // The storefront configurator sells these switches and the section order;
+    // a theme that ignores them ships a site that is not what the realtor bought.
+    // Behaviour, not colour, so the first colourway is enough.
+
+    describe('modules and layout', () => {
+      const [full] = themeFixtures(manifest.variants[0]?.value ?? 'default')
+      const fixture = full as ThemeFixture
+      const withSite = (patch: (site: SiteConfig) => SiteConfig) =>
+        buildProps(theme, { ...fixture, site: patch(fixture.site) })
+      const blog = (on: boolean) =>
+        withSite((site) => ({
+          ...site,
+          features: { ...site.features, blog: on },
+          pages: { ...site.pages, home: { sections: [...homeSections(site), 'blog'] } },
+        }))
+
+      it('links no blog route when the blog is off', () => {
+        // The client repo 404s /blog when features.blog is off. The blog pages
+        // themselves are unreachable then, so only the others are checked.
+        const props = blog(false)
+        for (const page of ['Home', 'ListingIndex', 'PropertyDetail'] as const) {
+          const html = render(theme, page, props[page])
+          expect(linksToBlog(html), `${page} links to the blog with features.blog off`).toBe(false)
+        }
+      })
+
+      it('links the blog when it is on', () => {
+        expect(linksToBlog(render(theme, 'Home', blog(true).Home))).toBe(true)
+      })
+
+      it('renders exactly one header, first, on every page', () => {
+        const props = buildProps(theme, fixture)
+        for (const page of THEME_PAGES) {
+          const html = render(theme, page, props[page])
+          expect(tagCount(html, 'header'), `${page}: <header> count`).toBe(1)
+          expect(headerComesFirst(html), `${page}: header is not first`).toBe(true)
+        }
+      })
+
+      it('keeps one header first when the hero is not the first section', () => {
+        const props = withSite((site) => {
+          const rest = homeSections(site).filter((s) => s !== 'hero')
+          return { ...site, pages: { ...site.pages, home: { sections: [...rest.slice(0, 2), 'hero', ...rest.slice(2)] } } }
+        })
+        const html = render(theme, 'Home', props.Home)
+        expect(tagCount(html, 'header'), '<header> count').toBe(1)
+        expect(headerComesFirst(html), 'header is not first').toBe(true)
+      })
     })
 
     // ── stylesheet ───────────────────────────────────────────────────────────

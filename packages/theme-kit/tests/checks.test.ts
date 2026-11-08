@@ -4,8 +4,11 @@ import {
   CONTRACT_ROUTES,
   cssVariants,
   danglingLinks,
+  headerComesFirst,
   internalLinks,
+  linksToBlog,
   strayTokens,
+  tagCount,
   usesThemeInline,
 } from '../src/conformance/checks.js'
 import { themeFixtures } from '../src/fixtures/index.js'
@@ -182,5 +185,35 @@ describe('fixtures', () => {
     for (const f of themeFixtures('crimson')) {
       expect(f.site.theme.variant).toBe('crimson')
     }
+  })
+})
+
+describe('tagCount', () => {
+  it('counts element openings, not lookalikes', () => {
+    const html = '<header class="a"></header><headline></headline><header-bar></header-bar><header>x</header>'
+    expect(tagCount(html, 'header')).toBe(2)
+  })
+})
+
+describe('headerComesFirst', () => {
+  it('passes a header ahead of the sections', () => {
+    expect(headerComesFirst('<header>nav</header><section>hero</section>')).toBe(true)
+  })
+
+  it('catches a header carried inside the hero', () => {
+    // REALVISTA before the fix: move the hero down and the nav goes with it.
+    expect(headerComesFirst('<section>featured</section><section><header>nav</header></section>')).toBe(false)
+  })
+
+  it('fails a page with no header at all', () => {
+    expect(headerComesFirst('<section>hero</section>')).toBe(false)
+  })
+})
+
+describe('linksToBlog', () => {
+  it('sees the index and posts, ignoring look-alike routes', () => {
+    expect(linksToBlog('<a href="/blog">Blog</a>')).toBe(true)
+    expect(linksToBlog('<a href="/blog/penb">Článek</a>')).toBe(true)
+    expect(linksToBlog('<a href="/blogger">x</a><a href="https://example.cz/blog">x</a>')).toBe(false)
   })
 })
