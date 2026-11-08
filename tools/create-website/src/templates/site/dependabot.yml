@@ -1,0 +1,15 @@
+# Security and framework updates for a per-client deployment (ARCHITECTURE.md,
+# "The accepted cost: security updates"). GitHub opens the PR, we merge,
+# Vercel redeploys.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      next-react:
+        patterns: ['next', 'react', 'react-dom', '@types/react', '@types/react-dom']
+      payload:
+        patterns: ['payload', '@payloadcms/*']

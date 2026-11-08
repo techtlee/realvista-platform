@@ -1,0 +1,122 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderSiteConfig > site.urls.ts agrees with site.config.ts (same input, same origins) 1`] = `
+"/**
+ * The two origins Next.js itself needs at build time, as plain literals.
+ * GENERATED with site.config.ts from the same provisioning request.
+ *
+ * \`next.config.ts\` imports this file and nothing else from the site, because
+ * Next loads \`next.config.ts\` with a plain require hook before the app's
+ * module graph exists, and \`site.config.ts\` imports the theme's TSX sources.
+ * Keep it free of imports.
+ */
+
+/** Canonical origin of the site; \`site.config.ts\` derives the same from \`domain\`. */
+export const siteUrl = 'https://novak-test.realvista.cz'
+
+/** The CMS this site reads; the environment wins, so one build can point anywhere. */
+export const cmsUrl = process.env.NEXT_PUBLIC_CMS_URL ?? 'https://admin.novak-test.realvista.cz'
+"
+`;
+
+exports[`renderSiteConfig > snapshot 1`] = `
+"import { defineSiteConfig } from '@makleri/core/config'
+
+import theme from './app/theme'
+import { cmsUrl, siteUrl } from './site.urls'
+
+/**
+ * GENERATED from the provisioning request (CRM lead → /create-website) by
+ * the create-website exporter. Edit the request and
+ * regenerate rather than editing this by hand.
+ *
+ * Only the CMS origin and tenant id are read from the environment; everything
+ * else is the client's selection.
+ */
+const site = defineSiteConfig(
+  {
+    siteId: 'novak-test',
+    locale: 'cs-CZ',
+    domain: 'novak-test.realvista.cz',
+    theme: {
+      name: 'realvista',
+      variant: 'clay'
+    },
+    brand: {
+      name: 'Jan Novák Reality'
+    },
+    features: {
+      blog: true,
+      listingMap: true,
+      mortgageCalculator: true
+    },
+    pages: {
+      home: {
+        sections: [
+          'hero',
+          'agent',
+          'featured',
+          'stats',
+          'services',
+          'blog',
+          'contact'
+        ]
+      }
+    },
+    cms: {
+      url: cmsUrl,
+      tenantId: Number(process.env.TENANT_ID ?? 1),
+    },
+  },
+  theme,
+)
+
+// next.config.ts reads site.urls.ts instead of this file, so the two must name
+// the same origin. Fails the build rather than shipping a sitemap, canonical
+// links and image origins that disagree with the site's own config.
+if (site.siteUrl !== siteUrl) {
+  throw new Error(
+    \`site.urls.ts siteUrl "\${siteUrl}" does not match site.config.ts ("\${site.siteUrl}", from domain). Regenerate both.\`,
+  )
+}
+
+export default site
+"
+`;
+
+exports[`the other generated files > globals.css points at the in-repo theme 1`] = `
+"@import '../src/makleri/theme/styles/theme.css';
+
+/* Tailwind v4 only scans this repo's own files for classes, and the theme's
+ * sources live under src/makleri/. Without this line every theme class is
+ * purged and the site renders unstyled. */
+@source "../src/makleri/theme/src";
+"
+`;
+
+exports[`the other generated files > package.json: pinned versions only, the site port, typecheck 1`] = `
+"{
+  "name": "site-svoboda-reality",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev --port \${PORT:-3111}",
+    "build": "next build",
+    "start": "next start --port \${PORT:-3111}",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.4.5",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
+"
+`;

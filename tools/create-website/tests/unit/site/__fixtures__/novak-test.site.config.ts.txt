@@ -1,0 +1,49 @@
+import { defineSiteConfig } from '@makleri/core/config'
+
+import theme from './app/theme'
+
+/**
+ * GENERATED from the provisioning JSON (CRM lead → /create-website) by
+ * clients/novak-test/generate-site-config.mjs. Edit the JSON and regenerate
+ * rather than editing this by hand.
+ *
+ * Only the CMS origin and tenant id are read from the environment; everything
+ * else is the client's selection.
+ */
+export default defineSiteConfig(
+  {
+    siteId: 'novak-test',
+    locale: 'cs-CZ',
+    domain: 'novak-test.realvista.cz',
+    theme: {
+      name: 'realvista',
+      variant: 'clay'
+    },
+    brand: {
+      name: 'Jan Novák Reality'
+    },
+    features: {
+      blog: true,
+      listingMap: true,
+      mortgageCalculator: true
+    },
+    pages: {
+      home: {
+        sections: [
+          'hero',
+          'agent',
+          'featured',
+          'stats',
+          'services',
+          'blog',
+          'contact'
+        ]
+      }
+    },
+    cms: {
+      url: process.env.NEXT_PUBLIC_CMS_URL ?? 'https://admin.novak-test.realvista.cz',
+      tenantId: Number(process.env.TENANT_ID ?? 1),
+    },
+  },
+  theme,
+)
