@@ -15,9 +15,9 @@ import { closeSync, existsSync, fchmodSync, fsyncSync, mkdirSync, openSync, read
 import { basename, dirname, join } from 'node:path'
 
 import { Redactor } from './redact.js'
-import type { SecretFileId, SecretRef, SecretStore } from './types.js'
+import { OUTWARD_ENABLED, OutwardDisabledError, type LocalSecretFileId, type SecretFileId, type SecretRef, type SecretStore } from './types.js'
 
-export const SECRET_FILE_IDS: readonly SecretFileId[] = [
+export const SECRET_FILE_IDS: readonly LocalSecretFileId[] = [
   'backend/.env',
   'backend/.admin-credentials.local',
   'site/.env.local',
@@ -179,6 +179,10 @@ export class FileSecretStore implements SecretStore {
         return join(this.paths.backend, '.admin-credentials.local')
       case 'site/.env.local':
         return join(this.paths.site, '.env.local')
+      case 'backend/.env.production.local':
+        return join(this.paths.backend, '.env.production.local')
+      case 'site/.env.production.local':
+        return join(this.paths.site, '.env.production.local')
       default: {
         const never: never = file
         throw new Error(`unknown secret file ${String(never)}`)
@@ -186,7 +190,13 @@ export class FileSecretStore implements SecretStore {
     }
   }
 
+  /** Production secret files are plan references only while outward steps are disabled. */
+  private assertLocal(file: SecretFileId): void {
+    if (!OUTWARD_ENABLED && file.endsWith('.env.production.local')) throw new OutwardDisabledError(`secret file ${file}`)
+  }
+
   private read(file: SecretFileId): DotenvLine[] {
+    this.assertLocal(file)
     const p = this.pathOf(file)
     if (!existsSync(p)) return []
     const lines = parseDotenv(readFileSync(p, 'utf8'))
@@ -195,6 +205,7 @@ export class FileSecretStore implements SecretStore {
   }
 
   private write(file: SecretFileId, lines: DotenvLine[]): void {
+    this.assertLocal(file)
     writeFileAtomic0600(this.pathOf(file), lines.map((l) => l.raw).join('\n') + '\n')
   }
 
@@ -258,4 +269,52 @@ export class FileSecretStore implements SecretStore {
 
 function assertKey(key: string): void {
   if (!KEY_RE.test(key)) throw new Error(`invalid env key "${key}"`)
+}
+
+// ---------------------------------------------------------------------------
+// Leak scan (`cw secrets-check`, last check of `verify`)
+
+export interface LeakHit {
+  file: string
+  /** which secret (file id + key NAME), never the value */
+  secret: string
+  match: 'full' | 'substring'
+}
+
+/** Every 12-character window of a value; a partial leak still counts. */
+function windows(v: string, n = 12): string[] {
+  if (v.length <= n) return [v]
+  const out: string[] = []
+  for (let i = 0; i + n <= v.length; i++) out.push(v.slice(i, i + n))
+  return out
+}
+
+/**
+ * Scans `files` (contents) for the named secret values, full or any
+ * 12-character substring. Pure: the caller decides which files (tracked
+ * files of the three repos, logs/, the state file, outward-plan.*).
+ */
+export function scanForLeaks(files: Array<{ path: string; content: string }>, secrets: Array<{ name: string; value: string }>): LeakHit[] {
+  const hits: LeakHit[] = []
+  const usable = secrets.filter((s) => s.value.length >= 8)
+  for (const f of files) {
+    for (const s of usable) {
+      if (f.content.includes(s.value)) hits.push({ file: f.path, secret: s.name, match: 'full' })
+      else if (s.value.length > 12 && windows(s.value).some((w) => f.content.includes(w))) hits.push({ file: f.path, secret: s.name, match: 'substring' })
+    }
+  }
+  return hits
+}
+
+/** All secret-classified values in the three secret files, named `file:KEY`. */
+export function namedSecrets(store: FileSecretStore): Array<{ name: string; value: string }> {
+  const out: Array<{ name: string; value: string }> = []
+  for (const f of SECRET_FILE_IDS) {
+    const p = store.pathOf(f)
+    if (!existsSync(p)) continue
+    for (const l of parseDotenv(readFileSync(p, 'utf8'))) {
+      if (l.key !== undefined && l.value && isSecretFileKey(l.key)) out.push({ name: `${f}:${l.key}`, value: l.value })
+    }
+  }
+  return out
 }

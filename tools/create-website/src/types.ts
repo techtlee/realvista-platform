@@ -224,8 +224,14 @@ export type SecretRef = { file: SecretFileId; key: string }
 /**
  * Logical secret files, resolved against `Ctx.paths`:
  * `backend/.env`, `backend/.admin-credentials.local`, `site/.env.local`.
+ *
+ * The `*.env.production.local` ids exist only so outward `plan()` output can
+ * REFERENCE production secrets (`stdin: {file, key}`). The SecretStore
+ * refuses to read or write them while OUTWARD_ENABLED is false.
  */
-export type SecretFileId = 'backend/.env' | 'backend/.admin-credentials.local' | 'site/.env.local'
+export type LocalSecretFileId = 'backend/.env' | 'backend/.admin-credentials.local' | 'site/.env.local'
+export type ProductionSecretFileId = 'backend/.env.production.local' | 'site/.env.production.local'
+export type SecretFileId = LocalSecretFileId | ProductionSecretFileId
 
 export interface PlannedCommand {
   id: string
