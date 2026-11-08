@@ -116,8 +116,14 @@ describe('cw CLI', () => {
     const creds = readFileSync(credsPath, 'utf8')
     expect(statSync(credsPath).mode & 0o777).toBe(0o600)
 
+    expect(r1.json.complete).toBe(false)
+    expect(r1.json.handover).toBeUndefined()
     const r2 = await cw(root, ['run', 'svoboda-reality'])
     expect(r2.code).toBe(0)
+    // the resume prints the hand-over summary, like a complete first run
+    expect(r2.json).toMatchObject({ complete: true, handover: { marker: 'handover' } })
+    const r3 = await cw(root, ['run', 'svoboda-reality'])
+    expect(r3.json).toMatchObject({ complete: true, handover: { marker: 'handover' } })
     expect(r2.json.runId).toBe(r1.json.runId)
     expect(readFileSync(credsPath, 'utf8')).toBe(creds)
     const runs = runsOf(root)

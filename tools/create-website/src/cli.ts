@@ -497,6 +497,12 @@ async function cmdRun(v: Values, positional: string | undefined, io: Io, cfg: Co
       ran: report.ran,
       crm: crm as unknown as Json,
     }
+    // Every run that ends complete prints the hand-over summary, a resume
+    // included: it is the step's recorded output, not something only a
+    // first run produces.
+    const complete = report.ok && nextStep(steps, ctx) === null
+    out.complete = complete
+    if (complete) out.handover = (s.steps.handover?.outputs ?? null) as Json
     if (report.failed) {
       Object.assign(out, {
         code: report.failed.code,
