@@ -230,6 +230,8 @@ export const backendEnv: Step = {
   phase: 'B',
   crmLogName: 'backend-seed',
   outward: false,
+  // Holds PAYLOAD_SECRET: regenerating it would invalidate every session and stored key hash.
+  irreversible: true,
   dependsOn: ['backend-db', 'backend-copy'],
   // The values are never regenerated, so the fingerprint is the set of keys and the DB name only.
   fingerprint: (ctx) => fingerprintOf({ keys: BACKEND_ENV_KEYS, db: backendDbName(ctx) }),

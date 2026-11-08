@@ -46,8 +46,8 @@ describe('registry', () => {
     }
   })
 
-  it('only backend-credentials is irreversible', () => {
-    expect(STEPS.filter((s) => s.irreversible).map((s) => s.id)).toEqual(['backend-credentials'])
+  it('only backend-env (PAYLOAD_SECRET) and backend-credentials are irreversible', () => {
+    expect(STEPS.filter((s) => s.irreversible).map((s) => s.id)).toEqual(['backend-env', 'backend-credentials'])
   })
 
   it('every local step has a probe and every dependency is a known step', () => {

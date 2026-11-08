@@ -23,6 +23,7 @@ import {
   siteKey,
 } from './backend.js'
 import { OUTWARD_STEPS, crmReport, crmSiteRecord, handover, outwardPlan, verify } from './finish.js'
+import { LOCAL_PLANS } from './localPlan.js'
 import { input, preflight, recordRepo, starterCopy } from './record.js'
 import { siteBuild, siteCopy, siteEnv, siteInstall, siteStandalone, siteStart } from './site.js'
 
@@ -61,6 +62,8 @@ const ALL: Step[] = [
 export const STEPS: readonly Step[] = STEP_IDS.map((id) => {
   const s = ALL.find((x) => x.id === id)
   if (!s) throw new Error(`no step module for ${id}`)
+  const plan = LOCAL_PLANS[id]
+  if (plan && !s.outward) s.plan = plan
   return s
 })
 

@@ -1,7 +1,8 @@
 /**
  * Phase A (preflight, input, record repo) and the starter-copy step.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { formatIssues, initStarterCopy, validateStarterCopy } from '../copy/index.js'
@@ -20,8 +21,27 @@ async function gitOut(ctx: Ctx, cwd: string, args: string[]): Promise<string | n
   return r.code === 0 ? r.stdout : null
 }
 
+/**
+ * Reads one committed file. Not via `git show` stdout: Exec redacts child
+ * output (e.g. `…_PASSWORD=1",` loses its closing quote), which corrupts JSON.
+ * `git archive` to a file and a plain fs read keep the bytes intact.
+ */
+export async function readCommittedFile(ctx: Ctx, repo: string, sha: string, path: string): Promise<string | null> {
+  const dir = mkdtempSync(join(tmpdir(), 'cw-manifest-'))
+  try {
+    const tar = join(dir, 'f.tar')
+    const a = await ctx.exec.run(['git', 'archive', '--format=tar', '-o', tar, sha, path], { cwd: repo, allowFailure: true })
+    if (a.code !== 0) return null
+    const x = await ctx.exec.run(['tar', '-xf', tar, '-C', dir], { cwd: dir, allowFailure: true })
+    if (x.code !== 0 || !existsSync(join(dir, path))) return null
+    return readFileSync(join(dir, path), 'utf8')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
 async function readManifest(ctx: Ctx, repo: string, sha: string, path: string): Promise<Record<string, unknown> | null> {
-  const text = await gitOut(ctx, repo, ['show', `${sha}:${path}`])
+  const text = await readCommittedFile(ctx, repo, sha, path)
   if (text === null) return null
   try {
     return JSON.parse(text) as Record<string, unknown>

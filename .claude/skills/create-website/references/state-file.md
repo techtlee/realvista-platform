@@ -50,9 +50,10 @@ directory, the step re-runs; if the state file says `failed` but the world is
 complete, the step is recorded `done` without re-running.
 
 A `done` step whose fingerprint changed marks itself and every dependant
-stale; they re-run. Exception: `backend-credentials` is irreversible. A stale
-credentials step stops with `STALE_IRREVERSIBLE` (exit 3), because generating
-new credentials would lock the realtor out and invalidate the site key. Explain
+stale; they re-run. Exceptions: `backend-credentials` and `backend-env` (which
+holds `PAYLOAD_SECRET`) are irreversible. A stale one stops with
+`STALE_IRREVERSIBLE` (exit 3), because new credentials would lock the realtor
+out and a new `PAYLOAD_SECRET` would invalidate every session and key. Explain
 what changed (usually the contact e-mail in the request) and ask Josef; the
 fix is normally to change the e-mail in the admin, not to regenerate.
 

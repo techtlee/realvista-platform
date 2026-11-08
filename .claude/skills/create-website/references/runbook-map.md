@@ -20,7 +20,7 @@ staff work; the skill only checks step 3's result (`crm-site-record`).
 | 6 | `backend-customize` | B | F14 | `backend-repo-local` | client README, `.github/dependabot.yml`; commit | commit trailer |
 | 7 | `backend-install` | B | 5 | `backend-repo-local` | `pnpm install --frozen-lockfile` | `node_modules/.modules.yaml` + lockfile sha |
 | 8 | `backend-db` | B | 6 | `backend-seed` | `CREATE DATABASE <prefix>backend_<slug>_dev` | DB exists and was created by this run; else `DB_EXISTS` |
-| 9 | `backend-env` | B | 6 | `backend-seed` | `.env` 0600: `DATABASE_URL`, `PAYLOAD_SECRET`, `PORT`, `PLATFORM_SUBDOMAIN_BASE` | keys present; only missing keys added, never overwritten |
+| 9 | `backend-env` | B | 6 | `backend-seed` | `.env` 0600: `DATABASE_URL`, `PAYLOAD_SECRET`, `PORT`, `PLATFORM_SUBDOMAIN_BASE` | keys present; only missing keys added, never overwritten; **never re-run** (PAYLOAD_SECRET) |
 | 10 | `backend-credentials` | B | 7 | `backend-seed` | `.admin-credentials.local` 0600 | file present; **never re-run** |
 | 11 | `backend-migrate` | B | 6 | `backend-seed` | `pnpm migrate` | always re-runs (idempotent) |
 | 12 | `backend-seed-admin` | B | 8 | `backend-seed` | `pnpm seed:admin` (upsert) | re-runs |
