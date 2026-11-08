@@ -33,14 +33,19 @@ describe('danglingLinks', () => {
     expect(danglingLinks(html)).toEqual([])
   })
 
-  it('catches the links REALVISTA actually shipped to a 404', () => {
-    // These were live in the header and footer of every client site.
+  it('passes the legal pages, which the client template now provides', () => {
+    // These were live in the footer of every client site and 404'd, until the
+    // template implemented them; now they are part of the contract.
     const html = `
-      <a href="/blog">Blog</a>
       <a href="/zasady-ochrany-osobnich-udaju">GDPR</a>
       <a href="/cookies">Cookies</a>
     `
-    expect(danglingLinks(html)).toEqual(['/zasady-ochrany-osobnich-udaju', '/cookies'])
+    expect(danglingLinks(html)).toEqual([])
+  })
+
+  it('catches a route no client repo provides', () => {
+    const html = '<a href="/reference">Reference</a><a href="/cookies-old">x</a>'
+    expect(danglingLinks(html)).toEqual(['/reference', '/cookies-old'])
   })
 
   it('accepts a route the theme declares in its manifest', () => {

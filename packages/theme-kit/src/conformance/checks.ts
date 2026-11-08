@@ -6,13 +6,19 @@
  * gate rests on it actually catching the cases it claims to.
  */
 
-/** Routes the client repo always provides, derived from the page surface. */
+/**
+ * Routes the client repo always provides: the page surface, plus the two legal
+ * pages every Czech site must link (the client template renders them from
+ * `settings.legal`, so no theme page is needed for them).
+ */
 export const CONTRACT_ROUTES = [
   '/',
   '/nemovitosti',
   '/nemovitosti/:slug',
   '/blog',
   '/blog/:slug',
+  '/zasady-ochrany-osobnich-udaju',
+  '/cookies',
 ] as const
 
 const toPattern = (route: string) =>
