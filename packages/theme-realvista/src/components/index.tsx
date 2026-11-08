@@ -1,3 +1,4 @@
+import type { SiteConfig } from '@makleri/core/config'
 import type { Post, Property, Service, SiteSettings } from '@makleri/core/content'
 import {
   cardTitle,
@@ -176,21 +177,41 @@ export function MorePropertiesCard({ count, href }: { count: number; href: strin
   )
 }
 
-const NAV = [
-  { href: '/nemovitosti', label: 'Nemovitosti' },
-  { href: '/#kontakt', label: 'Kontakt' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/#o-makleri', label: 'O Makléři' },
-]
+/**
+ * Header links, honouring the site's modules.
+ *
+ * `/blog` is linked only when `features.blog` is on: the client repo 404s the
+ * blog routes when it is off, and the configurator sells the switch.
+ */
+export function navItems(site: SiteConfig): { href: string; label: string }[] {
+  return [
+    { href: '/nemovitosti', label: 'Nemovitosti' },
+    { href: '/#kontakt', label: 'Kontakt' },
+    ...(site.features.blog ? [{ href: '/blog', label: 'Blog' }] : []),
+    { href: '/#o-makleri', label: 'O Makléři' },
+  ]
+}
 
 /**
  * Nav sits over the hero on the homepage and on the page background elsewhere.
  * `overlay` keeps it transparent and absolutely placed, matching the export.
+ *
+ * Rendered once per page, first. `site` is required so the links can follow
+ * the modules the realtor bought.
  */
-export function Header({ settings, overlay = false }: { settings: SiteSettings | null; overlay?: boolean }) {
+export function Header({
+  settings,
+  site,
+  overlay = false,
+}: {
+  settings: SiteSettings | null
+  site: SiteConfig
+  overlay?: boolean
+}) {
   // Over the hero the nav takes the hero's ink (white on crimson and clay,
   // brand indigo on indigo); elsewhere it always sits on the page background.
   const ink = overlay ? 'text-hero-ink' : 'text-brand'
+  const nav = navItems(site)
 
   return (
     <header className={overlay ? 'absolute inset-x-0 top-0 z-40' : 'relative z-40'}>
@@ -199,7 +220,7 @@ export function Header({ settings, overlay = false }: { settings: SiteSettings |
           {settings?.siteName ?? 'Realvista'}
         </a>
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV.map((n) => (
+          {nav.map((n) => (
             <a key={n.href} href={n.href} className={`rv-track text-[16px] leading-[20px] ${ink} hover:opacity-70`}>
               {n.label}
             </a>
@@ -305,7 +326,7 @@ export function ContactSection({
   )
 }
 
-export function Footer({ settings }: { settings: SiteSettings | null }) {
+export function Footer({ settings, site }: { settings: SiteSettings | null; site: SiteConfig }) {
   const c = settings?.contact
   const name = settings?.siteName ?? 'REALVISTA'
 
@@ -326,7 +347,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
               { href: '/#o-makleri', label: 'O Makléři' },
               { href: '/nemovitosti', label: 'Nabízené nemovitosti' },
               { href: '/nemovitosti?stav=prodano', label: 'Prodané nemovitosti' },
-              { href: '/blog', label: 'Blog & Poradna' },
+              ...(site.features.blog ? [{ href: '/blog', label: 'Blog & Poradna' }] : []),
             ].map((l) => (
               <li key={l.href}>
                 <a href={l.href} className="text-[15px] leading-[20px] text-footer-ink hover:text-white">

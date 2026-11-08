@@ -89,7 +89,7 @@ export function RealvistaHome({
         )}
         <div className="rv-hero-overlay absolute inset-0" />
 
-        <Header settings={settings} overlay />
+        <Header settings={settings} site={site} overlay />
 
         <Container className="relative flex h-full flex-col justify-center">
           <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-hero-ink sm:text-[60px] sm:leading-[67px]">
@@ -197,8 +197,9 @@ export function RealvistaHome({
 
     contact: <ContactSection key="contact" settings={settings} />,
 
+    // Off means no /blog route exists on the client site, so no teaser either.
     blog:
-      posts.length > 0 ? (
+      site.features.blog && posts.length > 0 ? (
         <section key="blog" className="pb-[150px] pt-[150px]">
           <Container>
             <div className="flex flex-wrap items-start justify-between gap-6">
@@ -227,18 +228,18 @@ export function RealvistaHome({
     <>
       {order.map((id) => sections[id] ?? null)}
       {/* The hero carries the header; any other opening section needs its own. */}
-      {order[0] !== 'hero' ? <Header settings={settings} /> : null}
-      <Footer settings={settings} />
+      {order[0] !== 'hero' ? <Header settings={settings} site={site} /> : null}
+      <Footer settings={settings} site={site} />
     </>
   )
 }
 
 // ── listing index ────────────────────────────────────────────────────────────
 
-export function RealvistaListingIndex({ settings, listings, totalListings }: ListingIndexPageProps) {
+export function RealvistaListingIndex({ site, settings, listings, totalListings }: ListingIndexPageProps) {
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
       <Container className="py-[90px]">
         <h1 className="text-[30px] font-medium leading-[36px] text-brand">Nabídka nemovitostí</h1>
         <p className="rv-track mt-4 text-[16px] leading-[20px] text-brand">
@@ -258,7 +259,7 @@ export function RealvistaListingIndex({ settings, listings, totalListings }: Lis
         )}
       </Container>
       <ContactSection settings={settings} />
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
@@ -273,7 +274,7 @@ function listingCount(n: number): string {
 
 // ── property detail ──────────────────────────────────────────────────────────
 
-export function RealvistaPropertyDetail({ settings, property, similar }: PropertyDetailPageProps) {
+export function RealvistaPropertyDetail({ site, settings, property, similar }: PropertyDetailPageProps) {
   const gallery = property.gallery ?? []
   const [main, ...rest] = gallery
   const agent = settings?.agent
@@ -312,7 +313,7 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
 
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
 
       <Container className="pt-[40px]">
         <nav className="flex flex-wrap items-center gap-2 text-[14px] leading-[18px] text-muted">
@@ -497,17 +498,17 @@ export function RealvistaPropertyDetail({ settings, property, similar }: Propert
         <ContactSection settings={settings} propertyId={property.id} />
       </div>
 
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
 
 // ── blog ─────────────────────────────────────────────────────────────────────
 
-export function RealvistaBlogIndex({ settings, posts }: BlogIndexPageProps) {
+export function RealvistaBlogIndex({ site, settings, posts }: BlogIndexPageProps) {
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
       <PageHeading
         title="Vědomosti a praxe"
         lead="Zkušenosti z trhu, hloubkové analýzy a praktické tipy k prodeji i pronájmu."
@@ -525,18 +526,18 @@ export function RealvistaBlogIndex({ settings, posts }: BlogIndexPageProps) {
           </p>
         )}
       </Container>
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
 
-export function RealvistaPostDetail({ settings, post, recent }: PostDetailPageProps) {
+export function RealvistaPostDetail({ site, settings, post, recent }: PostDetailPageProps) {
   const cover = imageUrl(post.coverImage, 'hero')
   const date = formatDate(post.publishedAt)
 
   return (
     <>
-      <Header settings={settings} />
+      <Header settings={settings} site={site} />
 
       <Container className="pt-[40px]">
         <nav className="flex flex-wrap items-center gap-2 text-[14px] leading-[18px] text-muted">
@@ -592,7 +593,7 @@ export function RealvistaPostDetail({ settings, post, recent }: PostDetailPagePr
         <ContactSection settings={settings} />
       </div>
 
-      <Footer settings={settings} />
+      <Footer settings={settings} site={site} />
     </>
   )
 }
