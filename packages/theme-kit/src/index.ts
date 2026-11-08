@@ -184,6 +184,16 @@ export interface ThemeManifest {
    * invisible defect into a list the client template has to satisfy.
    */
   routes?: string[]
+  /**
+   * Section ids this theme renders, per page, in its default order.
+   *
+   * The storefront picker offers exactly these, and the intake endpoint
+   * rejects anything else — so a picker cannot sell a section the theme does
+   * not draw. Only `home` is listed because only `Home` honours
+   * `pages.*.sections`; a property-page list here would advertise a control
+   * that does nothing.
+   */
+  sections?: { home: readonly string[] }
 }
 
 export interface ServiceIconProps {

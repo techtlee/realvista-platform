@@ -55,4 +55,9 @@ export const manifest: ThemeManifest = {
    * them for free.
    */
   routes: ['/zasady-ochrany-osobnich-udaju', '/cookies'],
+
+  /** `Home` renders these, in this order, when `pages.home.sections` is unset. */
+  sections: {
+    home: ['hero', 'featured', 'services', 'agent', 'stats', 'contact', 'blog'],
+  },
 }

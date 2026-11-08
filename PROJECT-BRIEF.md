@@ -149,20 +149,21 @@ Phase E — storefront, intake form, fleet dashboard
 
 ## Current state
 
-Last updated 2026-10-09.
+Last updated 2026-10-15.
 
 | Thing | Status |
 |---|---|
-| CMS | **Done.** Payload 3.90.2 + Postgres, Czech admin, 9 collections |
+| CMS | **Done.** Payload 3.90.2 + Postgres, Czech admin, 18 collections (9 content/platform + 9 CRM) |
+| CRM | **Done (v1).** Collections, workflows and `apps/dashboard` — see "CRM — built" below |
 | Tenancy | **Done.** Data-driven isolation suite, registry test blocks uncovered collections |
 | Media pipeline | **Done.** Tenant-prefixed keys, EXIF stripped, 4 webp derivatives |
 | Revalidation | **Done.** CMS calls the site on save/delete; edits appear in ~1s |
 | Theme contract | **Done.** `@makleri/theme-kit` — types, fixtures, conformance |
 | Theme REALVISTA | **Done.** Implements `ThemeModule`; five pages, four colourways, passes conformance |
 | Demo site | **Done.** `apps/site`, 6 listings, 3 posts, blog, services, variant switcher |
-| Tests | **217 passing** — 57 CMS int, 13 CMS e2e, 52 core, 19 kit, 76 conformance. All verified 2026-10-08. The previous "97" counted the scaffold spec twice; it is one of the 57 |
+| Tests | **303 passing** — 134 CMS int (57 + 77 CRM), 13 CMS e2e (not re-run 2026-10-15: Playwright's browser is not installed), 52 core, 19 kit, 76 conformance, 22 selection. Verified 2026-10-15 |
 | R2 credentials | Not supplied. Adapter wired and disabled; uploads on local disk |
-| Migrations | **None.** Dev uses schema push. Blocks production |
+| Migrations | **Done.** `cms/src/migrations`: `baseline` + `crm`, applied cleanly to an empty database. Dev still pushes; production runs pending migrations on boot (`prodMigrations`) and never pushes |
 | Deploy | Not deployed. No GitHub org, nothing pushed |
 | Backups | **None.** Neither repo has a git remote; both exist only on one Mac |
 | `/api/poptavka` | **Still missing.** The contact form discards enquiries. Fix before any client goes live |
@@ -184,6 +185,8 @@ pnpm dev                 # http://localhost:3000/admin
 pnpm test:int            # the isolation gate — must stay green
 pnpm test:e2e            # HTTP-layer isolation (needs Playwright chromium)
 pnpm generate:types      # after any collection change
+pnpm migrate:create <n>  # after any collection change — production never pushes schema
+pnpm seed:crm            # dev only: a staff account + sample pipeline through the real workflows
 pnpm generate:importmap  # after adding a plugin with admin components
 pnpm seed:admin          # bootstrap a platform admin
 ```
@@ -416,3 +419,87 @@ runThemeConformance(theme, { packageRoot: new URL('..', import.meta.url) })
 Two couplings it should not inherit. `hero.subheadline` doubles as the footer
 strapline, and `about.heading` is rendered as the agent band's headline — both
 REALVISTA decisions a second layout is free to ignore.
+
+
+---
+
+# CRM — built
+
+Built 2026-10-15 from `CRM-BRIEF` (the brief pasted into that session). The CMS
+holds the content of client websites; the CRM holds the relationship with the
+client. Realtors never see any of it.
+
+## Where it lives
+
+| Piece | Where |
+|---|---|
+| 9 collections | `cms/src/collections/crm/` — organizations, contacts, deals, activities, tasks, subscriptions, invoices, tickets, documents. Admin group "CRM", hidden from realtors, staff read/write, admin-only delete |
+| `leads`, `tenants` extended | selection JSON, owner, attribution, `lastActivityAt`, timeline joins; tenants gain `liveSince`, `organization`, `lead`, `selection`, `themeVersion`, `lastBuild` — all internal-read only |
+| Workflows | `cms/src/crm/workflows.ts` — `submitIntake`, `convertLead`, `createTenantFromDeal`, each one transaction |
+| Endpoints | `GET /api/themes` (public), `POST /api/intake` (public), `GET /api/ares/:ico`, `POST /api/leads/:id/convert`, `POST /api/deals/:id/create-tenant` (staff) |
+| Hooks | `cms/src/crm/hooks.ts` — status changes write `status-change` activities; activities keep `lastActivityAt`; timestamps (`liveSince`, `closedAt`, `paidAt`, `resolvedAt`, `firstResponseAt`) |
+| Selection schema | `packages/selection` (`@makleri/selection`) — v1 zod schema, intake request schema, `toSiteConfigInput`, `readStoredSelection` with the v2 upgrade slot, and `./registry` (the catalog, built from theme manifests) |
+| Dashboard | `apps/dashboard` — Next 16, port 3002. Dnes, Zájemci, Obchody, Firmy, Weby, Fakturace, Podpora, Úkoly |
+| Tests | `cms/tests/int/crm.int.spec.ts` (77), `packages/selection/tests` (22) |
+
+Run it: `cd cms && pnpm dev` (3000), then `cd platform/apps/dashboard && pnpm dev`
+(3002). Sign in with an internal account — `pnpm seed:crm` creates one.
+
+## Decisions made while building
+
+- **`staff` role, added through new functions.** `isInternal*` in
+  `tenantScoped.ts`; `isAdmin()` untouched, so every existing admin check still
+  denies staff. Staff: CRM read/write, read all tenants, update tenant status
+  and ring, read colleagues. Not: tenant content, user management,
+  `revalidateSecret`, `hosting.githubRepo` / `vercelProjectId`. All asserted.
+- **The multi-tenant plugin needed two explicit exceptions.** It ANDs a
+  membership constraint onto `tenants` and `users` for anyone without all-tenant
+  access, which shut staff out. `useTenantsCollectionAccess: false` (our
+  `ownTenantsOnly` already covers realtors) and a `usersAccessResultOverride`
+  for internal users only. `userHasAccessToAllTenants` stays admin-only.
+- **The lead's selection is immutable** (`access.update: () => false`, even for
+  an admin). Creating a tenant `structuredClone`s it. Tested: reconfiguring
+  the site leaves the lead's copy untouched.
+- **Intake is strict.** Unknown keys, themes, colourways, section ids and
+  duplicate sections are rejected against the catalog. Stored selections are
+  read leniently and never against today's catalog.
+- **The theme manifest gained `sections.home`.** The picker, the intake check
+  and REALVISTA's own default order all read it. Optional in the contract.
+- **`modules.services` and `modules.blog` = false drop that home section** in
+  `toSiteConfigInput`, so the toggles do something. `modules.references` has
+  no section in any theme and is CRM-only for now.
+- **Deals use `stage`, not `status`.** No CRM collection has drafts.
+- **Money is integer haléře**; net, rate, VAT and gross are all stored; VAT
+  rounds per invoice. Amounts and the `billedTo` snapshot are admin-only after
+  creation, so staff can mark an invoice paid but not change it.
+- **"Overdue" is computed, not stored**: issued, and the due date has passed.
+- **The dashboard signs in with a bearer token**, not a shared cookie: the login
+  action calls `/api/users/login` and keeps the JWT in an httpOnly cookie on
+  the dashboard's own origin. Every read and write forwards it, so Payload's
+  access functions decide; the dashboard has no privileges of its own.
+  Documents stream through `/dokumenty/:id` for the same reason.
+- **The dashboard type-checks against `cms/src/payload-types.ts`** via a
+  type-only path alias (`@cms/types`), so a renamed field breaks its build.
+- **`cms/next.config.ts` has `turbopack.root` set to `makleri/`**, because
+  `@makleri/selection` is `link:`ed from `../platform`. Revert when the
+  packages are published.
+
+## Still open
+
+- **Rate limiting on `/api/intake`.** It has a honeypot and a strict schema,
+  but no rate limit. Put it behind the edge before the storefront is public.
+- **Pricing.** Tiers are named (`basic` / `standard` / `premium`) with no
+  prices; prices are entered per subscription.
+- **Fakturoid / iDoklad.** Invoices are logged by hand; `externalId` is ready
+  for the integration.
+- **`themeVersion` and `lastBuild` have no writer yet.** The fleet view reads
+  them; the provisioning/CI automation (Phase D) has to set them, as it does
+  `provisioningLog` (steps listed in `apps/dashboard/lib/data.ts`).
+- **The storefront picker (`apps/gallery`)** is not built. `GET /api/themes`
+  and `POST /api/intake` are what it calls. The two-themes-on-one-page token
+  collision is still undecided.
+- **`cms` ESLint is broken independently of this work** (`@eslint/eslintrc`
+  missing from `node_modules`).
+- **`PLATFORM_SUBDOMAIN_BASE`** (env) names the platform subdomain at tenant
+  creation; it is unset until the product name and domain are decided.
+

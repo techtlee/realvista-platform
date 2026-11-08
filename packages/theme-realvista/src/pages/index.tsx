@@ -21,6 +21,8 @@ import {
 } from '@makleri/core/format'
 import type { ReactNode } from 'react'
 
+import { manifest } from '../manifest.js'
+
 import {
   Container,
   ContactSection,
@@ -51,7 +53,8 @@ import {
 // ── home ─────────────────────────────────────────────────────────────────────
 
 /** The order the design draws, used when the client repo does not say. */
-const DEFAULT_SECTIONS = ['hero', 'featured', 'services', 'agent', 'stats', 'contact', 'blog']
+// Read from the manifest so the storefront picker and the theme cannot disagree.
+const DEFAULT_SECTIONS = manifest.sections?.home ?? []
 
 export function RealvistaHome({
   site,
