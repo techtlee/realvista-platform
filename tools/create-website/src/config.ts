@@ -16,6 +16,9 @@ import { CwError, type Config } from './types.js'
 
 export const CONFIG_FILE = 'create-website.config.json'
 
+/** `pnpm seed:provisioner` (crm) output, dotenv `CW_CRM_API_KEY`/`CW_CRM_EMAIL`, 0600. */
+export const DEFAULT_CRM_CREDENTIALS_FILE = './crm/.env.provisioner.local'
+
 /** Never handed out, whatever a config says. */
 export const ALWAYS_RESERVED_PORTS = [3000, 3001, 3003, 3004, 3017, 3027, 3029] as const
 
@@ -136,7 +139,8 @@ export function loadConfig(opts: { cwd?: string; configPath?: string; env?: Node
       ? {
           crm: {
             url: c.crm.url.replace(/\/+$/, ''),
-            ...(c.crm.credentialsFile ? { credentialsFile: abs(c.crm.credentialsFile) } : {}),
+            // CW3: seed:provisioner writes the API key file here by default
+            credentialsFile: abs(c.crm.credentialsFile ?? DEFAULT_CRM_CREDENTIALS_FILE),
             ...(c.crm.apiKeyFile ? { apiKeyFile: abs(c.crm.apiKeyFile) } : {}),
           },
         }

@@ -39,8 +39,10 @@ function fakeCrm() {
       return send(404, {})
     }
     if (req.url === '/api/sites/3?depth=0') return send(200, { id: 3, slug: 'svoboda-reality', status: 'provisioning' })
+    if (req.url === '/api/sites/4/provisioning-log') return send(404, { error: 'Nenalezeno.' })
     if (req.url === '/api/sites/3/provisioning-log' && req.method === 'POST') {
       const e = JSON.parse(body)
+      if (!['ok', 'failed', 'skipped'].includes(e.status)) return send(400, { issues: [{ path: 'status', message: 'Invalid option' }] })
       if (log.some((x) => x.key === e.key)) return send(200, { appended: false })
       log.push(e)
       return send(201, { appended: true })
@@ -97,6 +99,26 @@ describe('CrmClient', () => {
     await new CrmClient(url, new FetchHttp(), { credentialsFile: creds }, r).getSite(3)
     expect(crm.auths).toContain('JWT jwt-token-abcdefgh')
     expect(r.redact('jwt-token-abcdefgh staff-password-1')).toBe('[REDACTED] [REDACTED]')
+  })
+
+  it('seed:provisioner key file as the (default) credentials file: API key used directly, key and email redacted', async () => {
+    const { url, crm } = await setup()
+    const dir = tmp()
+    const f = join(dir, '.env.provisioner.local')
+    writeFileSync(f, 'CW_CRM_API_KEY=key-0123456789\nCW_CRM_EMAIL=provisioner@realvista.local\n')
+    const r = new Redactor()
+    await new CrmClient(url, new FetchHttp(), { credentialsFile: f }, r).getSite(3)
+    expect(crm.auths.at(-1)).toBe('users API-Key key-0123456789')
+    expect(r.redact('key-0123456789 provisioner@realvista.local')).toBe('[REDACTED] [REDACTED]')
+  })
+
+  it('appendLog: 201 appended, 200 already there, 400 issues, 404 site', async () => {
+    const { client } = await setup()
+    const e = { key: 'cw-x:verify:ok', step: 'verify', status: 'ok' as const, at: '2026-11-08T12:00:00.000Z', detail: '' }
+    expect(await client.appendLog(3, e, 'cw-x')).toEqual({ appended: true })
+    expect(await client.appendLog(3, e, 'cw-x')).toEqual({ appended: false })
+    await expect(client.appendLog(3, { ...e, key: 'k2', status: 'weird' as never }, 'cw-x')).rejects.toThrow(/status: Invalid option/)
+    await expect(client.appendLog(4, e, 'cw-x')).rejects.toMatchObject({ code: 'NOT_FOUND' })
   })
 
   it('unreachable CRM → CRM_UNREACHABLE', async () => {

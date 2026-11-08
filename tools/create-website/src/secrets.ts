@@ -44,6 +44,7 @@ export const SECRET_KEYS: ReadonlySet<string> = new Set([
   'REVALIDATE_SECRET',
   'CMS_API_KEY',
   'CW_CRM_API_KEY',
+  'CW_CRM_EMAIL', // CW3 contract: both provisioner key-file entries are secret-classified
   'CRM_ADMIN_PASSWORD',
   'CRM_STAFF_PASSWORD',
 ])
@@ -64,7 +65,6 @@ export const NON_SECRET_KEYS: ReadonlySet<string> = new Set([
   'SERVER_URL',
   'CMS_URL',
   'CMS_PROBE_URL',
-  'CW_CRM_EMAIL',
   'CRM_ADMIN_EMAIL',
   'CRM_STAFF_EMAIL',
   'NEXT_TELEMETRY_DISABLED',

@@ -2,8 +2,10 @@
  * CRM client for /create-website (C1/C2/C3).
  *
  * Auth, in order (A5): `CW_CRM_API_KEY` env, then `crm.apiKeyFile`
- * (`seed:provisioner` output, dotenv `CW_CRM_API_KEY=…`), then a login with
- * `crm.credentialsFile` (staff, else admin). The JWT lives in memory only.
+ * (`seed:provisioner` output, dotenv `CW_CRM_API_KEY=…`, `CW_CRM_EMAIL=…`),
+ * then `crm.credentialsFile` — by default `./crm/.env.provisioner.local`, so
+ * an API key there is used directly; a file with CRM_STAFF_/CRM_ADMIN_
+ * EMAIL+PASSWORD logs in instead. The JWT lives in memory only.
  *
  * The skill only reads leads/sites and appends to provisioning logs; it never
  * converts, wins or creates CRM records (those are staff decisions).
@@ -74,11 +76,22 @@ export class CrmClient {
     }
     if (key) {
       this.redactor?.add(key)
+      if (this.auth.apiKeyFile && existsSync(this.auth.apiKeyFile)) {
+        const email = dotenvToRecord(readFileSync(this.auth.apiKeyFile, 'utf8')).CW_CRM_EMAIL
+        if (email) this.redactor?.add(email)
+      }
       this.authHeader = `users API-Key ${key}`
       return this.authHeader
     }
     if (this.auth.credentialsFile && existsSync(this.auth.credentialsFile)) {
       const c = dotenvToRecord(readFileSync(this.auth.credentialsFile, 'utf8'))
+      // the default credentials file is seed:provisioner's key file (CW3)
+      if (c.CW_CRM_API_KEY) {
+        this.redactor?.add(c.CW_CRM_API_KEY)
+        if (c.CW_CRM_EMAIL) this.redactor?.add(c.CW_CRM_EMAIL)
+        this.authHeader = `users API-Key ${c.CW_CRM_API_KEY}`
+        return this.authHeader
+      }
       const email = c.CRM_STAFF_EMAIL ?? c.CRM_ADMIN_EMAIL
       const password = c.CRM_STAFF_PASSWORD ?? c.CRM_ADMIN_PASSWORD
       if (email && password) {
@@ -142,7 +155,12 @@ export class CrmClient {
       detail: e.detail.slice(0, 4000),
     })
     if (res.status === 201) return { appended: true }
-    if (res.status === 200) return { appended: false }
+    if (res.status === 200) return { appended: false } // already logged: not an error
+    if (res.status === 404) throw new CwError('NOT_FOUND', `CRM site ${siteId} not found while logging ${e.key}`)
+    if (res.status === 400) {
+      const issues = (safeJson(res.text) as { issues?: Array<{ path: string; message: string }> } | null)?.issues ?? []
+      throw new CwError('INVALID_INPUT', `CRM rejected log entry ${e.key}: ${issues.map((i) => `${i.path}: ${i.message}`).join('; ') || 'HTTP 400'}`)
+    }
     throw new CwError('CRM_UNREACHABLE', `CRM refused log entry ${e.key}: HTTP ${res.status}`)
   }
 }

@@ -57,6 +57,8 @@ describe('SecretStore', () => {
     expect(classifyKey('TENANT_SLUG')).toBe('public')
     expect(classifyKey('CLIENT_EMAIL')).toBe('public')
     expect(classifyKey('PORT')).toBe('public')
+    expect(classifyKey('CW_CRM_API_KEY')).toBe('secret')
+    expect(classifyKey('CW_CRM_EMAIL')).toBe('secret')
     expect(classifyKey('FAVOURITE_COLOUR')).toBe('unknown')
   })
 

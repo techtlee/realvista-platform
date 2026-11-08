@@ -33,6 +33,7 @@ describe('config discovery', () => {
     const cfg = loadConfig({ cwd: '/', configPath: join(root, 'create-website.config.json'), env: { CW_DB_PREFIX: 'cwunit4_', CW_CRM_URL: 'http://localhost:4600' } })
     expect(cfg.dbPrefix).toBe('cwunit4_')
     expect(cfg.crm?.url).toBe('http://localhost:4600')
+    expect(cfg.crm?.credentialsFile).toBe(join(root, 'crm/.env.provisioner.local'))
   })
 
   it('missing or invalid config → CONFIG_INVALID (exit 4)', () => {
