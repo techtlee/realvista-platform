@@ -62,7 +62,7 @@ These are not style. Each one protects a real client or Josef's machine.
    refuse and explain this.
 5. **Run `cw status <slug> --json` before acting on anything that already
    exists.** A resume, "continue", "it died yesterday", "check novak", or any
-   `cw run` exit other than 0: status first, then decide. The state file is the
+   `cw run` exit other than 0: status first, then decide (`next`, `lastError`, `steps`). The state file is the
    record of what happened; guessing from directory listings leads to duplicate
    tenants, re-minted keys or a destroyed credentials file.
 6. **Never delete or overwrite something you did not create in this run.** On a
@@ -107,11 +107,13 @@ download button on the lead gives the full request envelope, which avoids the qu
 $CW status <slug> --json
 ```
 
-- `exists: false`: new client, continue with 3.
-- state exists with the **same** request sha: this is a resume. Skip `validate`
-  and go to 4; `cw run` continues where it stopped.
-- state exists with a **different** request (`INPUT_CHANGED` or a different
-  lead): stop. Another lead may own this slug. Explain, propose a free slug
+- `NOT_FOUND` (exit 4): no state yet, a new client; continue with 3.
+- state exists and `cw validate` reports `existingState` with the **same**
+  request sha: this is a resume. `cw run <slug> --json` continues where it
+  stopped. Read `next`, `lastError` and `steps` first so you can tell Josef what
+  happened.
+- the request differs (`INPUT_CHANGED`, or a different lead/brand in
+  `input`): stop. Another lead may own this slug. Explain, propose a free slug
   (e.g. `<slug>-2`) or a fix in the CRM, and wait for Josef.
 
 ### 3. Validate first, always
@@ -158,7 +160,7 @@ Exit codes and what to do: `references/errors.md`. In short:
 | 2 | invalid input | explain, stop |
 | 3 | conflict (slug, dir, DB, port) | explain, offer options, ask; never delete |
 | 4 | precondition (tools, Postgres, ports, template version) | fix if it's local and obvious (e.g. Postgres not running: say so), else tell Josef the hint |
-| 5 | a step failed, resumable | `cw status`, read the redacted log tail it points at, diagnose, fix the cause, `cw run` again; after two identical failures ask Josef |
+| 5 | a step failed, resumable | `cw status`, Read the redacted step log at `lastError.log`, diagnose, fix the cause, `cw run` again; after two identical failures ask Josef |
 | 6 | locked by a live run | wait or ask; never delete the lock |
 | 7 | outward refused | expected if something asked for an outward step; explain the plan |
 

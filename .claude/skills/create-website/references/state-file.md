@@ -2,8 +2,8 @@
 
 Location: `clients/<slug>/create-website.state.json`. It holds **no secrets**
 (only key *names*), so you may read it directly, though `cw status <slug>
---json` is the better view: it adds the next step, the last error, a hint and
-the redacted log tail. The file is committed in the record repo after each
+--json` is the better view: it adds `next`, `complete`, `lastError` (with a
+hint and the redacted step log path) and whether the two servers are alive. The file is committed in the record repo after each
 phase. Never edit it by hand; the runner rewrites it atomically after every
 status change and a hand edit is either lost or makes resume lie.
 

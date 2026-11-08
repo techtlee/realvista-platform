@@ -54,8 +54,8 @@ before doing anything else.
 
 ## Reading a step log
 
-`cw status <slug> --json` returns `lastError.log` and a redacted `logTail`.
-Logs are redacted (known secret values and `KEY=…` patterns replaced), so they
+`cw status <slug> --json` returns `lastError` with the step, code, message,
+hint and `log` (the per-step log path). Logs are redacted (known secret values and `KEY=…` patterns replaced), so they
 are safe to read with the Read tool. The files under `logs/<runId>/` are the
 only logs you should open; never open `.env*` or credential files to "check a
 value".
