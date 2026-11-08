@@ -89,8 +89,6 @@ export function RealvistaHome({
         )}
         <div className="rv-hero-overlay absolute inset-0" />
 
-        <Header settings={settings} site={site} overlay />
-
         <Container className="relative flex h-full flex-col justify-center">
           <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-hero-ink sm:text-[60px] sm:leading-[67px]">
             {hero?.headline ?? 'Reality nejsou jen nemovitosti. Jsou to vaše další kroky.'}
@@ -224,11 +222,16 @@ export function RealvistaHome({
       ) : null,
   }
 
+  // The header is rendered once, first, whatever the section order. It used to
+  // live inside the hero, so moving the hero down moved the nav with it and a
+  // second header was appended after the last section. It only takes the
+  // transparent overlay look when the hero is directly underneath it.
+  const heroFirst = order[0] === 'hero' && sections.hero != null
+
   return (
     <>
+      <Header settings={settings} site={site} overlay={heroFirst} />
       {order.map((id) => sections[id] ?? null)}
-      {/* The hero carries the header; any other opening section needs its own. */}
-      {order[0] !== 'hero' ? <Header settings={settings} site={site} /> : null}
       <Footer settings={settings} site={site} />
     </>
   )
