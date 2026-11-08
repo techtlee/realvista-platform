@@ -1,0 +1,789 @@
+{
+  "planVersion": 1,
+  "slug": "novak-test",
+  "mode": "local",
+  "outwardEnabled": false,
+  "steps": [
+    {
+      "step": "github-repos",
+      "title": "GitHub repos",
+      "runbook": "13",
+      "summary": "Create both repos from the local copies and push them. Backend first. Public during development.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "github-repos:backend",
+          "description": "Create OWNER/backend-novak-test and push main",
+          "argv": [
+            "gh",
+            "repo",
+            "create",
+            "OWNER/backend-novak-test",
+            "--public",
+            "--source",
+            ".",
+            "--remote",
+            "origin",
+            "--push"
+          ],
+          "envNames": [],
+          "idempotencyProbe": [
+            "gh",
+            "repo",
+            "view",
+            "OWNER/backend-novak-test"
+          ],
+          "note": "run in clients/backend-novak-test",
+          "shell": "gh repo view OWNER/backend-novak-test >/dev/null 2>&1 || gh repo create OWNER/backend-novak-test --public --source . --remote origin --push"
+        },
+        {
+          "id": "github-repos:site",
+          "description": "Create OWNER/site-novak-test and push main",
+          "argv": [
+            "gh",
+            "repo",
+            "create",
+            "OWNER/site-novak-test",
+            "--public",
+            "--source",
+            ".",
+            "--remote",
+            "origin",
+            "--push"
+          ],
+          "envNames": [],
+          "idempotencyProbe": [
+            "gh",
+            "repo",
+            "view",
+            "OWNER/site-novak-test"
+          ],
+          "note": "run in clients/site-novak-test",
+          "shell": "gh repo view OWNER/site-novak-test >/dev/null 2>&1 || gh repo create OWNER/site-novak-test --public --source . --remote origin --push"
+        }
+      ],
+      "records": [],
+      "instructions": [
+        "Public during development (Josef's decision); they go private at go-live (step 19)."
+      ]
+    },
+    {
+      "step": "postgres-hosting",
+      "title": "Postgres for the backend",
+      "runbook": "14",
+      "summary": "One database per client. Provider not chosen yet (ARCHITECTURE \"Still open\"); Neon in the EU is the placeholder.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "postgres-hosting:create",
+          "description": "Create the database project backend-novak-test and store its URL as DATABASE_URL",
+          "argv": [
+            "neonctl",
+            "projects",
+            "create",
+            "--name",
+            "backend-novak-test",
+            "--region-id",
+            "aws-eu-central-1",
+            "--output",
+            "json"
+          ],
+          "envNames": [],
+          "note": "Check `neonctl projects list` for backend-novak-test first; create only if missing.; stdout stored as DATABASE_URL in backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "neonctl projects create --name backend-novak-test --region-id aws-eu-central-1 --output json | jq -r '.connection_uris[0].connection_uri' | cw secret-pipe --write novak-test backend/.env.production.local DATABASE_URL"
+        }
+      ],
+      "records": [],
+      "instructions": [
+        "Schema: no manual step. prodMigrations runs pending migrations on first boot."
+      ]
+    },
+    {
+      "step": "vercel-projects",
+      "title": "Vercel projects",
+      "runbook": "15",
+      "summary": "Link each repo to a Vercel project of the same name and connect it to its GitHub repo.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "vercel-projects:backend:link",
+          "description": "Link backend-novak-test to the Vercel project backend-novak-test",
+          "argv": [
+            "vercel",
+            "link",
+            "--yes",
+            "--project",
+            "backend-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "`vercel project ls` first; linking an existing project is safe.; run in clients/backend-novak-test",
+          "shell": "vercel link --yes --project backend-novak-test --scope TEAM"
+        },
+        {
+          "id": "vercel-projects:backend:git",
+          "description": "Connect the project to OWNER/backend-novak-test",
+          "argv": [
+            "vercel",
+            "git",
+            "connect"
+          ],
+          "envNames": [],
+          "note": "run in clients/backend-novak-test",
+          "shell": "vercel git connect"
+        },
+        {
+          "id": "vercel-projects:site:link",
+          "description": "Link site-novak-test to the Vercel project site-novak-test",
+          "argv": [
+            "vercel",
+            "link",
+            "--yes",
+            "--project",
+            "site-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "`vercel project ls` first; linking an existing project is safe.; run in clients/site-novak-test",
+          "shell": "vercel link --yes --project site-novak-test --scope TEAM"
+        },
+        {
+          "id": "vercel-projects:site:git",
+          "description": "Connect the project to OWNER/site-novak-test",
+          "argv": [
+            "vercel",
+            "git",
+            "connect"
+          ],
+          "envNames": [],
+          "note": "run in clients/site-novak-test",
+          "shell": "vercel git connect"
+        }
+      ],
+      "records": [],
+      "instructions": []
+    },
+    {
+      "step": "vercel-env",
+      "title": "Vercel env, production seed, deploy",
+      "runbook": "15",
+      "summary": "Backend env and deploy, then seed production once it is up, then the site env and deploy. Production secrets are new values in the production files, never the local dev ones.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "vercel-env:generate:PAYLOAD_SECRET",
+          "description": "Generate PAYLOAD_SECRET for production (created if missing, never overwritten, never shown)",
+          "argv": [
+            "cw",
+            "secret-pipe",
+            "--generate",
+            "novak-test",
+            "backend/.env.production.local",
+            "PAYLOAD_SECRET"
+          ],
+          "envNames": [],
+          "shell": "cw secret-pipe --generate novak-test backend/.env.production.local PAYLOAD_SECRET"
+        },
+        {
+          "id": "vercel-env:generate:MAKLERI_ADMIN_PASSWORD",
+          "description": "Generate MAKLERI_ADMIN_PASSWORD for production (created if missing, never overwritten, never shown)",
+          "argv": [
+            "cw",
+            "secret-pipe",
+            "--generate",
+            "novak-test",
+            "backend/.env.production.local",
+            "MAKLERI_ADMIN_PASSWORD"
+          ],
+          "envNames": [],
+          "shell": "cw secret-pipe --generate novak-test backend/.env.production.local MAKLERI_ADMIN_PASSWORD"
+        },
+        {
+          "id": "vercel-env:generate:CLIENT_PASSWORD",
+          "description": "Generate CLIENT_PASSWORD for production (created if missing, never overwritten, never shown)",
+          "argv": [
+            "cw",
+            "secret-pipe",
+            "--generate",
+            "novak-test",
+            "backend/.env.production.local",
+            "CLIENT_PASSWORD"
+          ],
+          "envNames": [],
+          "shell": "cw secret-pipe --generate novak-test backend/.env.production.local CLIENT_PASSWORD"
+        },
+        {
+          "id": "vercel-env:generate:REVALIDATE_SECRET",
+          "description": "Generate REVALIDATE_SECRET for production (created if missing, never overwritten, never shown)",
+          "argv": [
+            "cw",
+            "secret-pipe",
+            "--generate",
+            "novak-test",
+            "backend/.env.production.local",
+            "REVALIDATE_SECRET"
+          ],
+          "envNames": [],
+          "shell": "cw secret-pipe --generate novak-test backend/.env.production.local REVALIDATE_SECRET"
+        },
+        {
+          "id": "vercel-env:backend:DATABASE_URL",
+          "description": "Set DATABASE_URL on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "DATABASE_URL",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: DATABASE_URL from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local DATABASE_URL | vercel env add DATABASE_URL production"
+        },
+        {
+          "id": "vercel-env:backend:PAYLOAD_SECRET",
+          "description": "Set PAYLOAD_SECRET on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "PAYLOAD_SECRET",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: PAYLOAD_SECRET from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local PAYLOAD_SECRET | vercel env add PAYLOAD_SECRET production"
+        },
+        {
+          "id": "vercel-env:backend:PLATFORM_SUBDOMAIN_BASE",
+          "description": "Set PLATFORM_SUBDOMAIN_BASE on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "PLATFORM_SUBDOMAIN_BASE",
+            "production"
+          ],
+          "envNames": [],
+          "note": "run in clients/backend-novak-test",
+          "shell": "printf %s realvista.cz | vercel env add PLATFORM_SUBDOMAIN_BASE production"
+        },
+        {
+          "id": "vercel-env:backend:R2_BUCKET",
+          "description": "Set R2_BUCKET on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "R2_BUCKET",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: R2_BUCKET from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local R2_BUCKET | vercel env add R2_BUCKET production"
+        },
+        {
+          "id": "vercel-env:backend:R2_ENDPOINT",
+          "description": "Set R2_ENDPOINT on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "R2_ENDPOINT",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: R2_ENDPOINT from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local R2_ENDPOINT | vercel env add R2_ENDPOINT production"
+        },
+        {
+          "id": "vercel-env:backend:R2_ACCESS_KEY_ID",
+          "description": "Set R2_ACCESS_KEY_ID on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "R2_ACCESS_KEY_ID",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: R2_ACCESS_KEY_ID from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local R2_ACCESS_KEY_ID | vercel env add R2_ACCESS_KEY_ID production"
+        },
+        {
+          "id": "vercel-env:backend:R2_SECRET_ACCESS_KEY",
+          "description": "Set R2_SECRET_ACCESS_KEY on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "R2_SECRET_ACCESS_KEY",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: R2_SECRET_ACCESS_KEY from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local R2_SECRET_ACCESS_KEY | vercel env add R2_SECRET_ACCESS_KEY production"
+        },
+        {
+          "id": "vercel-env:backend:R2_PUBLIC_URL",
+          "description": "Set R2_PUBLIC_URL on the backend project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "R2_PUBLIC_URL",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: R2_PUBLIC_URL from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local R2_PUBLIC_URL | vercel env add R2_PUBLIC_URL production"
+        },
+        {
+          "id": "vercel-env:backend:deploy",
+          "description": "Deploy the backend",
+          "argv": [
+            "vercel",
+            "deploy",
+            "--prod"
+          ],
+          "envNames": [],
+          "note": "run in clients/backend-novak-test",
+          "shell": "vercel deploy --prod"
+        },
+        {
+          "id": "vercel-env:seed:seed:admin",
+          "description": "Run seed:admin against the production database",
+          "argv": [
+            "pnpm",
+            "seed:admin"
+          ],
+          "envNames": [
+            "NODE_ENV"
+          ],
+          "note": "environment from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "(set -a; . \"$CW_ROOT/clients/backend-novak-test/.env.production.local\"; set +a; NODE_ENV=production pnpm seed:admin)"
+        },
+        {
+          "id": "vercel-env:seed:seed:client-site",
+          "description": "Run seed:client-site against the production database",
+          "argv": [
+            "pnpm",
+            "seed:client-site"
+          ],
+          "envNames": [
+            "NODE_ENV",
+            "PROVISIONING_REQUEST",
+            "SITE_URL"
+          ],
+          "note": "Prints TENANT_ID=<n>; keep it as $TENANT_ID for the site env below.; environment from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "(set -a; . \"$CW_ROOT/clients/backend-novak-test/.env.production.local\"; set +a; NODE_ENV=production PROVISIONING_REQUEST=../novak-test/provisioning-request.json SITE_URL=https://novak-test.realvista.cz pnpm seed:client-site)"
+        },
+        {
+          "id": "vercel-env:seed:seed:client",
+          "description": "Run seed:client against the production database",
+          "argv": [
+            "pnpm",
+            "seed:client"
+          ],
+          "envNames": [
+            "NODE_ENV",
+            "TENANT_SLUG",
+            "CLIENT_NAME",
+            "CLIENT_EMAIL"
+          ],
+          "note": "environment from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "(set -a; . \"$CW_ROOT/clients/backend-novak-test/.env.production.local\"; set +a; NODE_ENV=production TENANT_SLUG=novak-test CLIENT_NAME='Jan Novák' CLIENT_EMAIL=jan.novak@novak-test.cz pnpm seed:client)"
+        },
+        {
+          "id": "vercel-env:seed:seed:site-key",
+          "description": "Run seed:site-key against the production database",
+          "argv": [
+            "pnpm",
+            "seed:site-key"
+          ],
+          "envNames": [
+            "NODE_ENV",
+            "TENANT_SLUG",
+            "CMS_PROBE_URL",
+            "SITE_KEY_OUT"
+          ],
+          "note": "M3: the key goes to the file (0600), stdout carries only TENANT_ID and the verification.; environment from backend/.env.production.local; run in clients/backend-novak-test",
+          "shell": "(set -a; . \"$CW_ROOT/clients/backend-novak-test/.env.production.local\"; set +a; NODE_ENV=production TENANT_SLUG=novak-test CMS_PROBE_URL=https://admin.novak-test.realvista.cz SITE_KEY_OUT=.env.site-key.production.local pnpm seed:site-key)"
+        },
+        {
+          "id": "vercel-env:site-key:store",
+          "description": "Move the minted key into the site production file as CMS_API_KEY",
+          "argv": [
+            "cw",
+            "secret-pipe",
+            "--write",
+            "novak-test",
+            "site/.env.production.local",
+            "CMS_API_KEY",
+            "--from-file",
+            "clients/backend-novak-test/.env.site-key.production.local",
+            "--delete-source"
+          ],
+          "envNames": [],
+          "shell": "cw secret-pipe --write novak-test site/.env.production.local CMS_API_KEY --from-file clients/backend-novak-test/.env.site-key.production.local --delete-source"
+        },
+        {
+          "id": "vercel-env:site:NEXT_PUBLIC_CMS_URL",
+          "description": "Set NEXT_PUBLIC_CMS_URL on the site project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "NEXT_PUBLIC_CMS_URL",
+            "production"
+          ],
+          "envNames": [],
+          "note": "run in clients/site-novak-test",
+          "shell": "printf %s https://admin.novak-test.realvista.cz | vercel env add NEXT_PUBLIC_CMS_URL production"
+        },
+        {
+          "id": "vercel-env:site:TENANT_ID",
+          "description": "Set TENANT_ID on the site project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "TENANT_ID",
+            "production"
+          ],
+          "envNames": [
+            "TENANT_ID"
+          ],
+          "note": "stdin: $TENANT_ID; run in clients/site-novak-test",
+          "shell": "printf %s \"$TENANT_ID\" | vercel env add TENANT_ID production"
+        },
+        {
+          "id": "vercel-env:site:CMS_API_KEY",
+          "description": "Set CMS_API_KEY on the site project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "CMS_API_KEY",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: CMS_API_KEY from site/.env.production.local; run in clients/site-novak-test",
+          "shell": "cw secret-pipe novak-test site/.env.production.local CMS_API_KEY | vercel env add CMS_API_KEY production"
+        },
+        {
+          "id": "vercel-env:site:REVALIDATE_SECRET",
+          "description": "Set REVALIDATE_SECRET on the site project (production)",
+          "argv": [
+            "vercel",
+            "env",
+            "add",
+            "REVALIDATE_SECRET",
+            "production"
+          ],
+          "envNames": [],
+          "note": "stdin: REVALIDATE_SECRET from backend/.env.production.local; run in clients/site-novak-test",
+          "shell": "cw secret-pipe novak-test backend/.env.production.local REVALIDATE_SECRET | vercel env add REVALIDATE_SECRET production"
+        },
+        {
+          "id": "vercel-env:site:deploy",
+          "description": "Deploy the site",
+          "argv": [
+            "vercel",
+            "deploy",
+            "--prod"
+          ],
+          "envNames": [],
+          "note": "run in clients/site-novak-test",
+          "shell": "vercel deploy --prod"
+        }
+      ],
+      "records": [],
+      "instructions": [
+        "R2 is required in production (the backend config throws without it). Put R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_PUBLIC_URL into backend/.env.production.local before the backend env step; one bucket or prefix per client is still to be decided (F16).",
+        "Set MAKLERI_ADMIN_EMAIL in backend/.env.production.local by hand: it is ours, not the client's.",
+        "Order matters: the site build reads the backend, so backend env, deploy and seed come first (F11)."
+      ]
+    },
+    {
+      "step": "fallback-domains",
+      "title": "Fallback addresses",
+      "runbook": "16",
+      "summary": "Attach novak-test.realvista.cz and admin.novak-test.realvista.cz. realvista.cz is on Vercel DNS, so no manual DNS work.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "fallback-domains:site",
+          "description": "Attach novak-test.realvista.cz to site-novak-test",
+          "argv": [
+            "vercel",
+            "domains",
+            "add",
+            "novak-test.realvista.cz",
+            "site-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "An existing domain answers with a conflict: treat that as done.; run in clients/site-novak-test",
+          "shell": "vercel domains add novak-test.realvista.cz site-novak-test --scope TEAM"
+        },
+        {
+          "id": "fallback-domains:admin",
+          "description": "Attach admin.novak-test.realvista.cz to backend-novak-test",
+          "argv": [
+            "vercel",
+            "domains",
+            "add",
+            "admin.novak-test.realvista.cz",
+            "backend-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "An existing domain answers with a conflict: treat that as done.; run in clients/backend-novak-test",
+          "shell": "vercel domains add admin.novak-test.realvista.cz backend-novak-test --scope TEAM"
+        },
+        {
+          "id": "fallback-domains:record:novak-test.realvista.cz",
+          "description": "CNAME novak-test.realvista.cz → cname.vercel-dns.com",
+          "argv": [
+            "vercel",
+            "dns",
+            "add",
+            "realvista.cz",
+            "novak-test",
+            "CNAME",
+            "cname.vercel-dns.com",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "Only if Vercel DNS does not already resolve novak-test.realvista.cz for the team's projects.",
+          "shell": "vercel dns add realvista.cz novak-test CNAME cname.vercel-dns.com --scope TEAM"
+        },
+        {
+          "id": "fallback-domains:record:admin.novak-test.realvista.cz",
+          "description": "CNAME admin.novak-test.realvista.cz → cname.vercel-dns.com",
+          "argv": [
+            "vercel",
+            "dns",
+            "add",
+            "realvista.cz",
+            "admin.novak-test",
+            "CNAME",
+            "cname.vercel-dns.com",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "Only if Vercel DNS does not already resolve admin.novak-test.realvista.cz for the team's projects.",
+          "shell": "vercel dns add realvista.cz admin.novak-test CNAME cname.vercel-dns.com --scope TEAM"
+        }
+      ],
+      "records": [],
+      "instructions": []
+    },
+    {
+      "step": "deploy-hook",
+      "title": "Deploy hook",
+      "runbook": "16",
+      "summary": "Not needed (ISR).",
+      "notNeeded": "Client sites use ISR with on-demand revalidation (ARCHITECTURE, decided 2026-11-08): a save in the admin calls the site's /api/revalidate and the page re-renders on the next request. No rebuild per save, so no deploy hook. Template or config changes deploy through a git push.",
+      "commands": [],
+      "records": [],
+      "instructions": []
+    },
+    {
+      "step": "client-dns",
+      "title": "Client DNS (records only)",
+      "runbook": "17",
+      "summary": "Send the realtor three records to add at wedos. There is nothing to run.",
+      "notNeeded": null,
+      "commands": [],
+      "records": [
+        {
+          "type": "A",
+          "host": "novak-test.cz",
+          "value": "76.76.21.21",
+          "project": "site-novak-test"
+        },
+        {
+          "type": "CNAME",
+          "host": "www.novak-test.cz",
+          "value": "cname.vercel-dns.com",
+          "project": "site-novak-test"
+        },
+        {
+          "type": "CNAME",
+          "host": "admin.novak-test.cz",
+          "value": "cname.vercel-dns.com",
+          "project": "backend-novak-test"
+        }
+      ],
+      "instructions": [
+        "Add or change only these three records. Their e-mail (MX) and every other record stay exactly as they are.",
+        "The realtor adds them, or gives us access to their registrar account.",
+        "Then go-live (step 19) attaches the domain to the projects."
+      ]
+    },
+    {
+      "step": "dependabot-enable",
+      "title": "Dependabot",
+      "runbook": "18",
+      "summary": ".github/dependabot.yml is already committed in both repos. Turn on alerts and security fixes after the push.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "dependabot-enable:backend:alerts",
+          "description": "Enable vulnerability alerts on OWNER/backend-novak-test",
+          "argv": [
+            "gh",
+            "api",
+            "-X",
+            "PUT",
+            "repos/OWNER/backend-novak-test/vulnerability-alerts"
+          ],
+          "envNames": [],
+          "shell": "gh api -X PUT repos/OWNER/backend-novak-test/vulnerability-alerts"
+        },
+        {
+          "id": "dependabot-enable:backend:fixes",
+          "description": "Enable automated security fixes on OWNER/backend-novak-test",
+          "argv": [
+            "gh",
+            "api",
+            "-X",
+            "PUT",
+            "repos/OWNER/backend-novak-test/automated-security-fixes"
+          ],
+          "envNames": [],
+          "shell": "gh api -X PUT repos/OWNER/backend-novak-test/automated-security-fixes"
+        },
+        {
+          "id": "dependabot-enable:site:alerts",
+          "description": "Enable vulnerability alerts on OWNER/site-novak-test",
+          "argv": [
+            "gh",
+            "api",
+            "-X",
+            "PUT",
+            "repos/OWNER/site-novak-test/vulnerability-alerts"
+          ],
+          "envNames": [],
+          "shell": "gh api -X PUT repos/OWNER/site-novak-test/vulnerability-alerts"
+        },
+        {
+          "id": "dependabot-enable:site:fixes",
+          "description": "Enable automated security fixes on OWNER/site-novak-test",
+          "argv": [
+            "gh",
+            "api",
+            "-X",
+            "PUT",
+            "repos/OWNER/site-novak-test/automated-security-fixes"
+          ],
+          "envNames": [],
+          "shell": "gh api -X PUT repos/OWNER/site-novak-test/automated-security-fixes"
+        }
+      ],
+      "records": [],
+      "instructions": []
+    },
+    {
+      "step": "go-live",
+      "title": "Go-live",
+      "runbook": "19",
+      "summary": "Replace the draft legal texts, attach the client domain once their records resolve, make both repos private, mark the site live in the CRM.",
+      "notNeeded": null,
+      "commands": [
+        {
+          "id": "go-live:domain:apex",
+          "description": "Attach novak-test.cz to site-novak-test",
+          "argv": [
+            "vercel",
+            "domains",
+            "add",
+            "novak-test.cz",
+            "site-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "run in clients/site-novak-test",
+          "shell": "vercel domains add novak-test.cz site-novak-test --scope TEAM"
+        },
+        {
+          "id": "go-live:domain:www",
+          "description": "Attach www.novak-test.cz to site-novak-test (redirect it to the apex in the project settings)",
+          "argv": [
+            "vercel",
+            "domains",
+            "add",
+            "www.novak-test.cz",
+            "site-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "run in clients/site-novak-test",
+          "shell": "vercel domains add www.novak-test.cz site-novak-test --scope TEAM"
+        },
+        {
+          "id": "go-live:domain:admin",
+          "description": "Attach admin.novak-test.cz to backend-novak-test",
+          "argv": [
+            "vercel",
+            "domains",
+            "add",
+            "admin.novak-test.cz",
+            "backend-novak-test",
+            "--scope",
+            "TEAM"
+          ],
+          "envNames": [],
+          "note": "run in clients/backend-novak-test",
+          "shell": "vercel domains add admin.novak-test.cz backend-novak-test --scope TEAM"
+        },
+        {
+          "id": "go-live:private:backend",
+          "description": "Make OWNER/backend-novak-test private",
+          "argv": [
+            "gh",
+            "repo",
+            "edit",
+            "OWNER/backend-novak-test",
+            "--visibility",
+            "private",
+            "--accept-visibility-change-consequences"
+          ],
+          "envNames": [],
+          "shell": "gh repo edit OWNER/backend-novak-test --visibility private --accept-visibility-change-consequences"
+        },
+        {
+          "id": "go-live:private:site",
+          "description": "Make OWNER/site-novak-test private",
+          "argv": [
+            "gh",
+            "repo",
+            "edit",
+            "OWNER/site-novak-test",
+            "--visibility",
+            "private",
+            "--accept-visibility-change-consequences"
+          ],
+          "envNames": [],
+          "shell": "gh repo edit OWNER/site-novak-test --visibility private --accept-visibility-change-consequences"
+        }
+      ],
+      "records": [],
+      "instructions": [
+        "First replace the [NÁVRH] legal texts and every [DOPLNIT] placeholder with the client's real ones.",
+        "After the domain resolves: regenerate site.config.ts and site.urls.ts with domain novak-test.cz, set NEXT_PUBLIC_CMS_URL to https://admin.novak-test.cz, and set the tenant's hosting.siteUrl to https://novak-test.cz in the admin (re-running seed:client-site would reset the content).",
+        "In the CRM: site status live (sets liveSince); fill hosting.siteRepo, backendRepo, vercelSiteProject and vercelBackendProject."
+      ]
+    }
+  ]
+}
