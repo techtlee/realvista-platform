@@ -32,22 +32,22 @@
   },
   "peerDependencies": {
     "@makleri/core": "workspace:*",
+    "@makleri/theme-kit": "workspace:*",
     "next": "^15.0.0 || ^16.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@makleri/theme-kit": "workspace:*"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@makleri/config": "workspace:*",
     "@makleri/core": "workspace:*",
-    "@types/react": "^19.0.0",
-    "next": "^16.0.0",
-    "react": "^19.0.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^22.0.0",
     "@makleri/theme-kit": "workspace:*",
-    "react-dom": "^19.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "next": "^16.4.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
   "publishConfig": {
