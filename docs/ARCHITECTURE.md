@@ -6,7 +6,7 @@
 
 ## In one paragraph
 
-Every client gets their own deployments: a static website built from the
+Every client gets their own deployments: a website built from the
 template and configuration they picked, and one admin app that holds both their
 CMS (website content) and their CRM (buyers, enquiries, viewings). We run our
 own internal CRM as a separate system with its own database, plus the landing
@@ -20,7 +20,7 @@ or a database with another client or with us.
 | realvista.cz | landing page + configurator | `realvista-web` | visitors |
 | crm.realvista.cz | **our internal CRM**, own database | `realvista-crm` | Josef + staff |
 | demo.realvista.cz | demo site with fixture data, to inspect themes/components | demo (from platform) | us |
-| `<client>.cz` | the client's website, **static**, built from their configuration | `site-<client>` | the public |
+| `<client>.cz` | the client's website, **ISR** (pre-rendered, refreshed on save), built from their configuration | `site-<client>` | the public |
 | admin.`<client>.cz` | the client's **CMS + CRM in one app**, one login | `backend-<client>` | the realtor |
 
 Per client: **2 deployments, 1 database, 2 DNS records on their side.**
@@ -80,12 +80,14 @@ Rules for the skill:
 
 - The client picks their template and structure, so their site is its own
   thing, and changing one client's setup must not risk another's.
-- No big release management is planned: sites are static and built once.
+- No big release management is planned: sites are built once and only
+  their content changes afterwards.
 - A shared repo or instance has its own debugging and blast-radius problems.
 
-**The accepted cost: security updates.** Static sites need none. Each
-`backend-<client>` is a live server with logins, so when Next.js or Payload
-ships a security fix, every instance must be updated. Handle it with
+**The accepted cost: security updates.** Both `site-<client>` (a small Next.js
+server for ISR, the enquiry form and the media proxy) and `backend-<client>`
+(a live server with logins) run Next.js, so when Next.js or Payload ships a
+security fix, every instance must be updated. Handle it with
 **Dependabot on every client repo**: GitHub opens the PR, we merge, and Vercel
 redeploys.
 
@@ -125,10 +127,20 @@ One Next.js app: Payload plus extra pages, one database, one login.
 
 ## How the site and admin connect
 
-- **The site reads content** from `admin.<client>.cz/api/…` at build time.
-- **Saving in the admin triggers a rebuild** through the site's Vercel deploy
-  hook. The site is static and updates in about a minute.
-- Both links are set at provisioning.
+- **The site reads content** from `admin.<client>.cz/api/…`. Pages are
+  pre-rendered and cached (ISR, `revalidate = 3600` as a safety net).
+- **Saving in the admin refreshes the site on demand:** a Payload hook calls
+  the site's `/api/revalidate` with the tenant's `revalidateSecret`, and the
+  changed pages re-render on the next request, in seconds. No deploy hook and
+  no rebuild.
+- **The enquiry form** posts to the site's `/api/poptavka`, which stores the
+  enquiry in the admin with the site's API key.
+- The site URL, the revalidate secret and the API key are set at provisioning.
+
+> Decided 2026-11-08 (Josef): ISR + on-demand revalidation instead of a purely
+> static site rebuilt by a deploy hook. A static site would need the enquiry
+> form and the media proxy moved off the site first, and a rebuild per save is
+> slower. This is what `apps/site` and client #1 already do.
 
 ## System e-mail
 
