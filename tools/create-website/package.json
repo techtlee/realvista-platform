@@ -1,0 +1,33 @@
+{
+  "name": "@realvista/create-website",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "description": "Engine behind the /create-website skill: provisions a REALVISTA client locally (site + backend, Postgres, seed, run, verify, CRM log) and plans the outward steps.",
+  "bin": {
+    "cw": "./bin/cw"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "cw": "node --import tsx src/cli.ts",
+    "test": "vitest run --project unit",
+    "test:e2e": "vitest run --project e2e",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@makleri/selection": "workspace:*",
+    "pg": "^8.13.0",
+    "tsx": "^4.19.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@makleri/config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
