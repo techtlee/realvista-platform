@@ -35,7 +35,7 @@ const REGION_CENTRES: Record<string, [lat: number, lng: number]> = {
 /** Grid step for a hidden address: ~5.5 km north–south, ~3.6 km east–west. */
 const HIDDEN_GRID = 0.05
 
-const snap = (v: number) => Math.round(v / HIDDEN_GRID) * HIDDEN_GRID
+const snap = (v: number) => Number((Math.round(v / HIDDEN_GRID) * HIDDEN_GRID).toFixed(2))
 
 export interface MapView {
   lat: number
