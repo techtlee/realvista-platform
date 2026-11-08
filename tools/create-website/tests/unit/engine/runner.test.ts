@@ -115,14 +115,40 @@ describe('runner: staleness', () => {
     expect(ctl['backend-credentials'].runs).toBe(1)
   })
 
-  it('an irreversible step made stale by an upstream change also stops', async () => {
+  it('an irreversible step made stale only by an upstream change is re-probed: done → kept, not re-run', async () => {
     const { steps, ctl } = fakeWorld({ irreversible: ['backend-credentials'] })
     const ctx = fakeCtx()
     await runSteps(steps, ctx)
     ctl['backend-db'].fp = 'changed'
     const r = await runSteps(steps, ctx)
-    expect(r.failed?.code).toBe('STALE_IRREVERSIBLE')
-    expect(r.ran).toEqual(['backend-db', 'backend-env'])
+    expect(r.ok).toBe(true)
+    expect(r.outcomes['backend-credentials']).toBe('skipped-done')
+    expect(ctl['backend-credentials'].runs).toBe(1)
+    expect(ctx.state.step('backend-credentials').stale).toBe(false)
+    expect(r.ran).toContain('backend-db')
+    expect(r.ran).not.toContain('backend-credentials')
+  })
+
+  it('inherited staleness with an incomplete world runs the irreversible step (gap-filling), no STALE_IRREVERSIBLE', async () => {
+    const { steps, ctl } = fakeWorld({ irreversible: ['backend-credentials'] })
+    const ctx = fakeCtx()
+    await runSteps(steps, ctx)
+    ctl['backend-db'].fp = 'changed'
+    ctl['backend-credentials'].probe = { state: 'partial', detail: 'a key is missing' }
+    const r = await runSteps(steps, ctx)
+    expect(r.ok).toBe(true)
+    expect(ctl['backend-credentials'].runs).toBe(2)
+  })
+
+  it('a persisted stale flag from an older run is re-probed the same way', async () => {
+    const { steps, ctl } = fakeWorld({ irreversible: ['backend-credentials'] })
+    const ctx = fakeCtx()
+    await runSteps(steps, ctx)
+    ctx.state.patchStep('backend-credentials', { stale: true })
+    const r = await runSteps(steps, ctx)
+    expect(r.ok).toBe(true)
+    expect(ctl['backend-credentials'].runs).toBe(1)
+    expect(ctx.state.step('backend-credentials').stale).toBe(false)
   })
 
   it('staleness is persisted, so a run that dies before reaching a dependent still re-runs it', async () => {

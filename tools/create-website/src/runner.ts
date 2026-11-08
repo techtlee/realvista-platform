@@ -179,11 +179,32 @@ export async function runSteps(registry: Step[], ctx: Ctx, o: RunOptions = {}): 
         stale.add(d)
         if (st.step(d).status === 'done' && !st.step(d).stale) st.patchStep(d, { stale: true })
       }
-      if (step.irreversible) {
+      if (step.irreversible && !fpChanged) {
+        // Inherited staleness: an upstream input changed, not this step's own.
+        // Its artefacts (credentials, PAYLOAD_SECRET) may well be untouched, so
+        // look at the world: complete → keep them, clear stale and move on.
+        let p: Probe
+        try {
+          p = await step.probe(ctx)
+        } catch (e) {
+          return fail(step, e, EXIT.STEP_FAILED, 'failed')
+        }
+        if (p.state === 'done') {
+          st.patchStep(step.id, { stale: false })
+          outcomes[step.id] = 'skipped-done'
+          ctx.log.info(`step ${step.id} stale by inheritance, probe done: kept`)
+          finishGroupIfDone(step)
+          if (o.until === step.id) break
+          continue
+        }
+        // incomplete: fall through to a normal run, which for an irreversible
+        // step only fills gaps and never regenerates
+        st.patchStep(step.id, { stale: true })
+      } else if (step.irreversible) {
         st.patchStep(step.id, { stale: true })
         return fail(
           step,
-          new CwError('STALE_IRREVERSIBLE', `${step.id} is done but its inputs changed; it is never re-run automatically`, {
+          new CwError('STALE_IRREVERSIBLE', `${step.id} is done but its own inputs changed; it is never re-run automatically`, {
             step: step.id,
             hint: 'Explain the change to Josef; regenerating credentials needs his explicit decision.',
           }),

@@ -51,9 +51,12 @@ complete, the step is recorded `done` without re-running.
 
 A `done` step whose fingerprint changed marks itself and every dependant
 stale; they re-run. Exceptions: `backend-credentials` and `backend-env` (which
-holds `PAYLOAD_SECRET`) are irreversible. A stale one stops with
-`STALE_IRREVERSIBLE` (exit 3), because new credentials would lock the realtor
-out and a new `PAYLOAD_SECRET` would invalidate every session and key. Explain
+holds `PAYLOAD_SECRET`) are irreversible. When their **own** inputs changed
+(e.g. the contact e-mail) they stop with `STALE_IRREVERSIBLE` (exit 3), because
+new credentials would lock the realtor out and a new `PAYLOAD_SECRET` would
+invalidate every session and key. When they are stale only because something
+upstream changed, the runner re-probes them: complete files are kept and the
+step is skipped; missing keys are filled in, never regenerated. Explain
 what changed (usually the contact e-mail in the request) and ask Josef; the
 fix is normally to change the e-mail in the admin, not to regenerate.
 
