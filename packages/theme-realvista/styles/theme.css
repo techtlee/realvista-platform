@@ -16,7 +16,8 @@
  *
  * NOTE ON THE HERO. The variants are not simple hue swaps. Indigo puts dark
  * type on a pale wash over the photo; crimson and clay put white type on a
- * saturated gradient or a dark scrim. That is why `--rv-hero-ink` exists as its
+ * gradient band with the photo in its right half; mono puts it on a dark
+ * scrim over the full photo. That is why `--rv-hero-ink` exists as its
  * own token rather than inheriting `--rv-brand` — getting it wrong produces
  * indigo-on-indigo text that technically renders and cannot be read.
  */
@@ -52,7 +53,18 @@
   --rv-shadow-card: 10px 17px 99.1px #ededf8;
 
   /* Pale diagonal wash: the photo stays visible, type stays dark. */
-  --rv-hero-overlay: linear-gradient(94.83deg, #d5e0ee 11.42%, rgba(255, 255, 255, 0) 61.59%);
+  --rv-hero-overlay: linear-gradient(99.86deg, #d5e0ee 11.42%, rgba(255, 255, 255, 0) 61.59%);
+
+  /*
+   * Hero photo placement. Default: full bleed. Crimson and clay override it,
+   * because their design is a gradient band with the portrait in its right
+   * half (x 710–1390 of 1440), not a photo with a tint.
+   */
+  --rv-hero-bg: none;
+  --rv-hero-empty: var(--rv-accent);
+  --rv-hero-photo-width: 100%;
+  --rv-hero-photo-right: 0%;
+  --rv-hero-photo-mask: none;
   --rv-band-a: linear-gradient(270deg, #d5e0ee 4.83%, #0c0053 121.63%);
   --rv-band-b: linear-gradient(90deg, #d5e0ee -21.63%, #0c0053 95.17%);
   --rv-promo: linear-gradient(324.1deg, #0d0053 21%, #a8adcb 118.08%);
@@ -72,11 +84,23 @@
 
   --rv-shadow-card: 10px 17px 99.1px #f0eeec;
 
-  /* Saturated red-to-coral: the hero is the gradient, type goes white. */
-  --rv-hero-overlay: linear-gradient(270deg, #ad0c14 4.83%, #fd7b54 121.63%);
   --rv-band-a: linear-gradient(270deg, #ad0c14 4.83%, #fd7b54 121.63%);
   --rv-band-b: linear-gradient(90deg, #ad0c14 -21.63%, #fd7b54 95.17%);
   --rv-promo: linear-gradient(324.1deg, #ad0c14 21%, #fd7b54 118.08%);
+
+  /*
+   * The band is the hero; the photo takes the right half from x 710, faded in
+   * on its left edge so a rectangular upload blends into the band. The design
+   * stops a cut-out portrait at 1390, but a cut-out is transparent there, so
+   * running a rectangular photo to the edge is what reads the same. A cut-out
+   * PNG upload looks exactly as drawn.
+   */
+  --rv-hero-bg: var(--rv-band-a);
+  --rv-hero-overlay: none;
+  --rv-hero-empty: transparent;
+  --rv-hero-photo-width: 50.7%;
+  --rv-hero-photo-right: 0%;
+  --rv-hero-photo-mask: linear-gradient(to right, transparent 0%, #000 35%);
 }
 
 /* ── clay ──────────────────────────────────────────────────────── exact ── */
@@ -91,11 +115,23 @@
 
   --rv-shadow-card: 10px 17px 99.1px #f0eeec;
 
-  /* Dark scrim over the photo rather than a colour wash. */
-  --rv-hero-overlay: linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.15) 60%, rgba(0, 0, 0, 0) 100%);
   --rv-band-a: linear-gradient(270deg, #885e36 4.83%, #1c130d 121.63%);
   --rv-band-b: linear-gradient(90deg, #885e36 -21.63%, #1c130d 95.17%);
   --rv-promo: linear-gradient(324.1deg, #1c130d 21%, #885e36 118.08%);
+
+  /*
+   * The band is the hero; the photo takes the right half from x 710, faded in
+   * on its left edge so a rectangular upload blends into the band. The design
+   * stops a cut-out portrait at 1390, but a cut-out is transparent there, so
+   * running a rectangular photo to the edge is what reads the same. A cut-out
+   * PNG upload looks exactly as drawn.
+   */
+  --rv-hero-bg: var(--rv-band-a);
+  --rv-hero-overlay: none;
+  --rv-hero-empty: transparent;
+  --rv-hero-photo-width: 50.7%;
+  --rv-hero-photo-right: 0%;
+  --rv-hero-photo-mask: linear-gradient(to right, transparent 0%, #000 35%);
 }
 
 /*
@@ -134,6 +170,19 @@ body {
 }
 
 .rv-hero-overlay { background-image: var(--rv-hero-overlay); }
+
+.rv-hero { background-image: var(--rv-hero-bg); }
+.rv-hero-empty { background-color: var(--rv-hero-empty); }
+.rv-hero-photo {
+  right: var(--rv-hero-photo-right);
+  width: var(--rv-hero-photo-width);
+  -webkit-mask-image: var(--rv-hero-photo-mask);
+  mask-image: var(--rv-hero-photo-mask);
+}
+/* On a phone the right half is too narrow for a face; the photo widens under the text. */
+@media (max-width: 1023px) {
+  .rv-hero-photo { right: 0; width: max(var(--rv-hero-photo-width), 75%); }
+}
 .rv-band-a { background-image: var(--rv-band-a); }
 .rv-band-b { background-image: var(--rv-band-b); }
 .rv-promo { background-image: var(--rv-promo); }

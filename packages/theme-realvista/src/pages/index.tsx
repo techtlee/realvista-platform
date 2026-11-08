@@ -82,21 +82,26 @@ export function RealvistaHome({
 
   const sections: Record<string, ReactNode> = {
     hero: (
-      <section key="hero" className="relative isolate h-[700px] overflow-hidden">
+      // How the photo sits is the colourway's call, not the markup's: full
+      // bleed under a wash (indigo, mono), or the right half of a gradient
+      // band, as the cut-out portrait is drawn on crimson and clay. See
+      // `.rv-hero` in theme.css.
+      <section key="hero" className="rv-hero relative isolate h-[700px] overflow-hidden">
         {heroSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={heroSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={heroSrc} alt="" className="rv-hero-photo absolute inset-y-0 h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-accent" />
+          <div className="rv-hero-empty absolute inset-0" />
         )}
         <div className="rv-hero-overlay absolute inset-0" />
 
-        <Container className="relative flex h-full flex-col justify-center">
+        {/* Top-anchored, not centred: the headline starts 188px down on the canvas. */}
+        <Container className="relative pt-[120px] lg:pt-[188px]">
           <h1 className="max-w-[689px] text-[40px] font-medium leading-[1.12] text-hero-ink sm:text-[60px] sm:leading-[67px]">
             {hero?.headline ?? 'Reality nejsou jen nemovitosti. Jsou to vaše další kroky.'}
           </h1>
           {hero?.subheadline ? (
-            <p className="mt-10 max-w-[530px] text-[22px] font-medium leading-[1.2] text-hero-ink sm:text-[30px] sm:leading-[36px]">
+            <p className="mt-10 max-w-[530px] text-[22px] font-medium leading-[1.2] text-hero-ink sm:text-[30px] sm:leading-[36px] lg:mt-[110px]">
               {hero.subheadline}
             </p>
           ) : null}
