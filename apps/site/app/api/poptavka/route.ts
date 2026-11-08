@@ -19,10 +19,8 @@ import { cms } from '../../cms'
 const DEFAULT_CONSENT_TEXT = 'Souhlasím se zpracováním osobních údajů'
 
 /**
- * Hidden field a person never fills in and a naive bot always does.
- *
- * The theme form doesn't render it yet; checking it here costs nothing and
- * starts working the day it does.
+ * Hidden field a person never fills in and a naive bot always does. The
+ * theme's ContactSection renders it off-screen.
  */
 const HONEYPOT = 'website'
 
