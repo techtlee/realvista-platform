@@ -1,0 +1,11 @@
+{
+  "name": "@makleri/config",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./oxlintrc.json": "./oxlintrc.json"
+  },
+  "devDependencies": { "next": "^16.4.5" }
+}

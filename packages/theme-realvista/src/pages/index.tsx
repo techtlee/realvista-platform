@@ -230,10 +230,24 @@ export function RealvistaHome({
   // transparent overlay look when the hero is directly underneath it.
   const heroFirst = order[0] === 'hero' && sections.hero != null
 
+  // Every rendered section is marked with its id, so the rendered order can be
+  // read back from the HTML (`[data-section]`) and compared with the config:
+  // that is how /create-website's verify step and the kit's conformance suite
+  // prove the site honours `pages.home.sections`. A `display: contents`
+  // wrapper rather than an attribute on each section, because `services` and
+  // `contact` are components with their own root, and the wrapper adds no box.
+  // Sections that render nothing (no agent, no stats, blog off) get no marker.
   return (
     <>
       <Header settings={settings} site={site} overlay={heroFirst} />
-      {order.map((id) => sections[id] ?? null)}
+      {order.map((id) => {
+        const node = sections[id]
+        return node == null ? null : (
+          <div key={id} data-section={id} className="contents">
+            {node}
+          </div>
+        )
+      })}
       <Footer settings={settings} site={site} />
     </>
   )

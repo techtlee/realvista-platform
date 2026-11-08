@@ -27,3 +27,11 @@ export {
 export { toSiteConfigInput, type ProvisioningFacts } from './mapping.js'
 export { readStoredSelection, tryReadStoredSelection, UnknownSelectionVersionError } from './upgrade.js'
 export { createIntakeRequestSchema, PORTFOLIO_SIZES, type IntakeRequest } from './intake.js'
+export {
+  buildProvisioningRequest,
+  createProvisioningRequestSchema,
+  RESERVED_SLUGS,
+  SITE_SLUG,
+  type ProvisioningRequest,
+  type ProvisioningRequestInput,
+} from './request.js'

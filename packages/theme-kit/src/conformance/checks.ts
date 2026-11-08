@@ -103,3 +103,15 @@ export function headerComesFirst(html: string): boolean {
 /** True when the markup links to the blog index or any post. */
 export const linksToBlog = (html: string): boolean =>
   internalLinks(html).some((l) => l === '/blog' || l.startsWith('/blog/'))
+
+/**
+ * The home section ids in rendered order, read from `data-section="…"`.
+ *
+ * Every theme marks each home section it renders this way, so the order a
+ * visitor sees can be compared with `pages.home.sections` without knowing the
+ * theme's markup. /create-website's verify step reads the same attribute from
+ * the live site.
+ */
+export function sectionOrder(html: string): string[] {
+  return [...html.matchAll(/\sdata-section="([^"]*)"/g)].map((m) => m[1] as string)
+}

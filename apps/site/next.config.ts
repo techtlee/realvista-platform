@@ -1,7 +1,6 @@
 import { createNextConfig } from '@makleri/config'
-import site from './site.config'
 
-export default createNextConfig({
-  siteUrl: site.siteUrl,
-  cmsUrl: site.cms.url,
-})
+// Not site.config.ts: see site.urls.ts for why next.config.ts must not load the theme.
+import { cmsUrl, siteUrl } from './site.urls'
+
+export default createNextConfig({ siteUrl, cmsUrl })

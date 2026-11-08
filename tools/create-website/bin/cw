@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Thin launcher: run the TypeScript CLI through tsx (no build step).
+set -euo pipefail
+HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+exec node --import "$HERE/node_modules/tsx/dist/esm/index.mjs" "$HERE/src/cli.ts" "$@"

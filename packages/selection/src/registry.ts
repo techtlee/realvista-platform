@@ -1,6 +1,7 @@
 import { manifest as realvista } from '@makleri/theme-realvista/manifest'
 
 import { catalogEntry, type Catalog } from './catalog.js'
+import { createProvisioningRequestSchema } from './request.js'
 import { createProvisioningSchema } from './schema.js'
 
 /**
@@ -21,3 +22,10 @@ export const catalog: Catalog = [catalogEntry(realvista)]
  * the themes on sale today.
  */
 export const provisioningSchema = createProvisioningSchema(catalog)
+
+/**
+ * The provisioning request envelope (slug, CRM ids, contact, company, and the
+ * provisioning JSON above) for the themes on sale today. `/create-website`
+ * validates its input with this first.
+ */
+export const provisioningRequestSchema = createProvisioningRequestSchema(catalog)

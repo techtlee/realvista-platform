@@ -7,6 +7,7 @@ import {
   headerComesFirst,
   internalLinks,
   linksToBlog,
+  sectionOrder,
   strayTokens,
   tagCount,
   usesThemeInline,
@@ -228,5 +229,22 @@ describe('linksToBlog', () => {
     expect(linksToBlog('<a href="/blog">Blog</a>')).toBe(true)
     expect(linksToBlog('<a href="/blog/penb">Článek</a>')).toBe(true)
     expect(linksToBlog('<a href="/blogger">x</a><a href="https://example.cz/blog">x</a>')).toBe(false)
+  })
+})
+
+describe('sectionOrder', () => {
+  it('reads data-section ids in document order', () => {
+    const html =
+      '<header></header><div data-section="hero" class="contents"><section></section></div>' +
+      '<div class="contents" data-section="agent"></div><div data-section="contact"></div>'
+    expect(sectionOrder(html)).toEqual(['hero', 'agent', 'contact'])
+  })
+
+  it('finds nothing in markup without markers, so a theme that drops them fails the order check', () => {
+    expect(sectionOrder('<section id="hero"></section><section></section>')).toEqual([])
+  })
+
+  it('ignores look-alike attributes', () => {
+    expect(sectionOrder('<div data-sections="x" data-section-id="y"></div>')).toEqual([])
   })
 })

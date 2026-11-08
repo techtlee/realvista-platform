@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# /create-website shim: runs the engine that lives in the same platform checkout
+# as this skill, so the skill and the template it generates from always match.
+#
+#   .claude/skills/create-website/scripts/cw <command> [args] --json
+#
+# The engine is TypeScript run through tsx (no build step). If the workspace
+# has not been installed yet, say so instead of failing with a module error.
+set -euo pipefail
+
+SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+SKILL_DIR="$(cd "$(dirname "$SELF")/.." && pwd)"
+ROOT="$(cd "$SKILL_DIR/../../.." && pwd)"          # platform repo root
+PKG="$ROOT/tools/create-website"
+CLI="$PKG/src/cli.ts"
+TSX="$PKG/node_modules/tsx/dist/esm/index.mjs"
+
+if [[ ! -f "$CLI" ]]; then
+  echo "{\"ok\":false,\"code\":\"PRECONDITION\",\"message\":\"create-website engine not found at $PKG\",\"hint\":\"Run the skill from a platform checkout that contains tools/create-website.\"}" >&2
+  exit 4
+fi
+if [[ ! -f "$TSX" ]]; then
+  echo "{\"ok\":false,\"code\":\"TOOL_MISSING\",\"message\":\"tools/create-website has no node_modules (tsx missing)\",\"hint\":\"Run: pnpm install --filter @realvista/create-website... in $ROOT\"}" >&2
+  exit 4
+fi
+
+exec node --import "$TSX" "$CLI" "$@"
